@@ -1,0 +1,11 @@
+{
+    "realm": "default-realm",
+    "auth-server-url": "https://keycloak.agri-gaia.localhost/",
+    "ssl-required": "external",
+    "resource": "frontend",
+    "public-client": true,
+    "confidential-port": 0,
+    "ssoSessionIdleTimeout": 604800,
+    "ssoSessionMaxLifespan": 2592000,
+    "accessTokenLifespan": 604800
+}

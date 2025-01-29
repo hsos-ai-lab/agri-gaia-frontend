@@ -1,0 +1,88 @@
+/*
+ * SPDX-FileCopyrightText: 2024 University of Applied Sciences Osnabrück
+ * SPDX-FileContributor: Andreas Schliebitz
+ * SPDX-FileContributor: Henri Graf
+ * SPDX-FileContributor: Jonas Tüpker
+ * SPDX-FileContributor: Lukas Hesse
+ * SPDX-FileContributor: Maik Fruhner
+ * SPDX-FileContributor: Prof. Dr.-Ing. Heiko Tapken
+ * SPDX-FileContributor: Tobias Wamhof
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans',
+        'Droid Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+#open-data-map {
+    position: absolute !important;
+    top: 64px;
+    bottom: 30px;
+    right: 0;
+}
+
+.open-data-map-sidenav-open {
+    /* DOM update does not work properly, so just let the map extend underneath the SideNav
+  left: 280px;*/
+    left: 70px;
+}
+
+.open-data-map-sidenav-closed {
+    left: 70px;
+}
+
+#open-data-type-select-card {
+    right: 30px;
+}
+
+#open-data-type-select-card-content {
+    padding: 10px;
+    width: 150px;
+}
+
+#geographic-data-menu-card {
+    left: 330px;
+}
+
+#weather-card {
+    top: 150px;
+}
+
+#search-location-card {
+    padding: '2px 4px';
+    display: 'flex';
+    align-items: 'center';
+    width: 300;
+}
+
+#geographic-data-menu-card-content {
+    /*padding: 10px;*/
+    width: 300px;
+}
+
+.leaflet-control-zoom {
+    display: none;
+}
+
+.map-overlay-card {
+    z-index: 500;
+    position: absolute;
+    top: 84px;
+}
+
+.map-overlay-left-sidenav-open {
+    left: 310;
+}
+
+.map-overlay-left-sidenav-closed {
+    left: 70;
+}

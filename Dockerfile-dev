@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2024 University of Applied Sciences Osnabrück
+# SPDX-FileContributor: Andreas Schliebitz
+# SPDX-FileContributor: Henri Graf
+# SPDX-FileContributor: Jonas Tüpker
+# SPDX-FileContributor: Lukas Hesse
+# SPDX-FileContributor: Maik Fruhner
+# SPDX-FileContributor: Prof. Dr.-Ing. Heiko Tapken
+# SPDX-FileContributor: Tobias Wamhof
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Run the development build inside the docker-compose network
+FROM node:16-alpine
+
+ARG REACT_APP_PORTAINER_VERSION
+RUN test -n "$REACT_APP_PORTAINER_VERSION"
+ENV REACT_APP_PORTAINER_VERSION=${REACT_APP_PORTAINER_VERSION}
+
+# enter working directory
+WORKDIR /code
+
+COPY package.json .
+
+# install all dependencies
+RUN npm install
+
+# copy everything
+COPY . .
+
+# run the dev server
+EXPOSE 80
+CMD ["npm", "start"]

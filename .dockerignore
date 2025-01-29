@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2024 University of Applied Sciences Osnabrück
+# SPDX-FileContributor: Andreas Schliebitz
+# SPDX-FileContributor: Henri Graf
+# SPDX-FileContributor: Jonas Tüpker
+# SPDX-FileContributor: Lukas Hesse
+# SPDX-FileContributor: Maik Fruhner
+# SPDX-FileContributor: Prof. Dr.-Ing. Heiko Tapken
+# SPDX-FileContributor: Tobias Wamhof
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Items that don't need to be in a Docker image.
+# Anything not used by the build system should go here.
+Dockerfile
+.dockerignore
+.gitignore
+README.md
+
+# Artifacts that will be built during image creation.
+# This should contain all files created during `npm run build`.
+build
+node_modules
+package-lock.json
