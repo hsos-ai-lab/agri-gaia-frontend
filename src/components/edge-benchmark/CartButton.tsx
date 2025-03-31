@@ -13,7 +13,7 @@ import React, { useState } from 'react';
 import { IconButton, Badge, Drawer } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CartDrawer from './CartDrawer';
-import BenchmarkDevice from '../../types/IBenchmarkDevice';
+import BenchmarkDevice from '../../types/edge-benchmark/IDeviceHeader';
 import { LegendToggleRounded } from '@mui/icons-material';
 
 const CartButton = ({ itemCount, onClick }: { itemCount: number; onClick: () => void }) => {

@@ -10,7 +10,7 @@
 // SPDX-License-Identifier: MIT
 
 import React from 'react';
-import BenchmarkDevice from '../../types/IBenchmarkDevice';
+import BenchmarkDevice from '../../types/edge-benchmark/IDeviceHeader';
 import { Button } from '@mui/material';
 
 const Card = {

@@ -10,7 +10,7 @@
 // SPDX-License-Identifier: MIT
 
 import { Button, Drawer, List, ListItem, ListItemText } from '@mui/material';
-import BenchmarkDevice from '../../types/IBenchmarkDevice';
+import BenchmarkDevice from '../../types/edge-benchmark/IDeviceHeader';
 
 const CartDrawer = ({
     open,

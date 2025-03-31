@@ -11,11 +11,11 @@
 
 import * as React from 'react';
 import DeviceCard from './DeviceCard';
-import BenchmarkDevice from '../../types/IBenchmarkDevice';
+import BenchmarkDevice from '../../types/edge-benchmark/IDeviceHeader';
 import Box from '@mui/material/Box';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { useState } from 'react';
-import IBenchmarkDevice from '../../types/IBenchmarkDevice';
+import IBenchmarkDevice from '../../types/edge-benchmark/IDeviceHeader';
 import { LegendToggleRounded } from '@mui/icons-material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';

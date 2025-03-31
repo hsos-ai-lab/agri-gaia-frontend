@@ -22,7 +22,7 @@ import ListItemText from '@mui/material/ListItemText';
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import SettingsIcon from '@mui/icons-material/Settings';
 import BugReportIcon from '@mui/icons-material/BugReport';
-import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined';
+//import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined';
 import SsidChartIcon from '@mui/icons-material/SsidChart';
 import PhonelinkOutlinedIcon from '@mui/icons-material/PhonelinkOutlined';
 import WorkspacesOutlinedIcon from '@mui/icons-material/WorkspacesOutlined';
@@ -36,8 +36,8 @@ import StorageIcon from '@mui/icons-material/Storage';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import BuildIcon from '@mui/icons-material/Build';
 import GroupWorkIcon from '@mui/icons-material/GroupWork';
-import StackedBarChartIcon from '@mui/icons-material/StackedBarChart';
-import StoreIcon from '@mui/icons-material/Store';
+//import StackedBarChartIcon from '@mui/icons-material/StackedBarChart';
+//import StoreIcon from '@mui/icons-material/Store';
 import ApiOutlinedIcon from '@mui/icons-material/ApiOutlined';
 import PeopleIcon from '@mui/icons-material/People';
 import SpeedIcon from '@mui/icons-material/Speed';
@@ -142,12 +142,12 @@ const internalLinks: Array<IListItem> = [
         icon: <SpeedIcon />,
         subMenu: [
             {
-                text: 'Start Job',
+                text: 'Create Job',
                 link: '/edge-benchmark',
                 icon: <SpeedIcon />,
             },
             {
-                text: 'Benchmark Overview',
+                text: 'Job Results',
                 link: '/edge-benchmark-overview',
                 icon: <SpeedIcon />,
             },
@@ -257,9 +257,9 @@ export default function SideNav() {
         const backgroundColor = isActive ? 'rgba(0,0,0,0.07)' : undefined;
 
         return (
-            <div>
+            <>
                 {item.subMenu ? (
-                    <div>
+                    <>
                         <ListItemButton
                             disabled={disabled}
                             key={item.link}
@@ -283,7 +283,7 @@ export default function SideNav() {
                                 {item.subMenu.map((item: any, index: number) => renderListItem(item, 16))}
                             </List>
                         </Collapse>
-                    </div>
+                    </>
                 ) : (
                     <ListItemButton
                         disabled={disabled}
@@ -303,7 +303,7 @@ export default function SideNav() {
                         )}
                     </ListItemButton>
                 )}
-            </div>
+            </>
         );
     }
 

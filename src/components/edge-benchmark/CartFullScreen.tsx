@@ -26,7 +26,7 @@ import {
     MenuItem,
     SelectChangeEvent,
 } from '@mui/material';
-import BenchmarkDevice from '../../types/IBenchmarkDevice';
+import BenchmarkDevice from '../../types/edge-benchmark/IDeviceHeader';
 import { LoadingButton } from '@mui/lab';
 import IDataset from '../../types/IDataset';
 import { httpGet, httpPost } from '../../api';
