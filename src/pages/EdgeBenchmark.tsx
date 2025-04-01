@@ -9,27 +9,24 @@
 //
 // SPDX-License-Identifier: MIT
 
-import { useEffect, useState } from 'react';
-import DeviceList from '../components/edge-benchmark/DeviceList';
-import BenchmarkJobCreateDialog from '../components/edge-benchmark/BenchmarkJobCreateDialog';
-import BenchmarkDevice from '../types/edge-benchmark/IDeviceHeader';
-import useKeycloak from '../contexts/KeycloakContext';
-import IBenchmarkDevice from '../types/edge-benchmark/IDeviceHeader';
-import { Grid, Typography } from '@mui/material';
 import { httpGet } from '../api';
-import { EDGE_BENCHMARK_PATH } from '../endpoints';
 import Fab from '@mui/material/Fab';
-import SettingsIcon from '@mui/icons-material/Settings';
+import { useEffect, useState } from 'react';
+import { Grid, Typography } from '@mui/material';
 import IAlertMessage from '../types/IAlertMessage';
+import useKeycloak from '../contexts/KeycloakContext';
+import SettingsIcon from '@mui/icons-material/Settings';
+import DeviceList from '../components/edge-benchmark/DeviceList';
+import IDeviceHeader from '../types/edge-benchmark/IDeviceHeader';
+import { EDGE_BENCHMARK_DEVICE_PATH, EDGE_BENCHMARK_DEVICE_HEADER_PATH } from '../endpoints';
+import BenchmarkJobCreateDialog from '../components/edge-benchmark/BenchmarkJobCreateDialog';
 
 const EdgeBenchmark = () => {
     const keycloak = useKeycloak();
-    const [devices, setDevices] = useState<BenchmarkDevice[]>([]);
-    const [selectedDevice, setSelectedDevice] = useState<BenchmarkDevice>();
-    const [selectedDeviceInfo, setSelectedDeviceInfo] = useState<JSON>({} as JSON);
-    const [cartItems, setCartItems] = useState<BenchmarkDevice[]>([]);
-    const [drawerOpen, setDrawerOpen] = useState(false);
-    const [fullScreenCartOpen, setFullScreenCartOpen] = useState(false);
+    const [deviceHeaders, setDeviceHeaders] = useState<IDeviceHeader[]>([]);
+    const [selectedDeviceHeader, setSelectedDeviceHeader] = useState<IDeviceHeader>();
+    const [selectedDeviceInfo, setSelectedDeviceInfo] = useState<Record<string, any>>();
+    const [selectedDeviceHeaders, setSelectedDeviceHeaders] = useState<IDeviceHeader[]>([]);
 
     const [benchmarkJobConfigModalOpen, setBenchmarkJobConfigModalOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState<IAlertMessage>({
@@ -39,69 +36,48 @@ const EdgeBenchmark = () => {
     });
 
     useEffect(() => {
-        fetchDevices();
+        fetchDeviceHeaders();
     }, [keycloak]);
 
-    const fetchDevices = async () => {
-        httpGet(keycloak, EDGE_BENCHMARK_PATH + '/devices')
-            .then((json) => {
-                const devices = json as IBenchmarkDevice[];
-                devices.sort((a, b) => a.name.localeCompare(b.name));
-                setDevices(devices);
-                console.log('Devices:', devices);
+    const fetchDeviceHeaders = async () => {
+        httpGet(keycloak, EDGE_BENCHMARK_DEVICE_HEADER_PATH)
+            .then((deviceHeader) => {
+                const deviceHeaders = deviceHeader as IDeviceHeader[];
+                deviceHeaders.sort((a, b) => a.name.localeCompare(b.name));
+                setDeviceHeaders(deviceHeaders);
+                console.log('Device headers :', deviceHeaders);
             })
             .catch((error) => {
                 console.error(error);
             });
     };
 
-    const handleDeviceClick = (device: BenchmarkDevice) => {
-        setSelectedDevice(device);
-        httpGet(keycloak, EDGE_BENCHMARK_PATH + '/' + device.hostname + '/info')
-            .then((json) => {
-                console.log(json);
-                setSelectedDeviceInfo(json);
+    const onDeviceClick = (deviceHeader: IDeviceHeader) => {
+        setSelectedDeviceHeader(deviceHeader);
+        const hostname = deviceHeader.hostname;
+        httpGet(keycloak, `${EDGE_BENCHMARK_DEVICE_PATH}/${hostname}/info`)
+            .then((deviceInfo) => {
+                setSelectedDeviceInfo(deviceInfo);
+                console.log(`Info for selected device '${hostname}':`, deviceInfo);
             })
-            .catch((error) => {
-                console.error(error);
-            });
+            .catch((error) => console.error(error));
     };
 
-    const handleCloseDetails = () => {
-        setSelectedDevice(undefined);
+    const onDeviceSelectionChange = (selectedDeviceHeaders: IDeviceHeader[]) => {
+        console.log('Select device headers:', selectedDeviceHeaders);
+        setSelectedDeviceHeaders(selectedDeviceHeaders);
     };
 
-    const handleCartClick = () => {
-        setDrawerOpen(true);
+    const onBenchmarkJobCreate = (benchmarkJobCreateMessage: IAlertMessage) => {
+        setSnackbarMessage(benchmarkJobCreateMessage);
     };
 
-    const handleCloseDrawer = () => {
-        setDrawerOpen(false);
+    const onBenchmarkJobCreateDialogClose = () => {
+        setBenchmarkJobConfigModalOpen(false);
     };
 
-    const handleViewFullCart = () => {
-        setFullScreenCartOpen(true);
-        setDrawerOpen(false);
-    };
-
-    const handleCloseFullScreenCart = () => {
-        setFullScreenCartOpen(false);
-    };
-
-    const handleAddToCart = (device: BenchmarkDevice) => {
-        const itemIndex = cartItems.findIndex((item) => item.ip === device.ip);
-        if (itemIndex >= 0) {
-            cartItems.splice(itemIndex, 1);
-        } else {
-            cartItems.push(device);
-        }
-        setCartItems(cartItems);
-        console.log(cartItems);
-        handleCloseDetails();
-    };
-
-    const handleBenchmarkConfigModalOpen = () => {
-        console.log('Benchmark Config Modal Open');
+    const onBenchmarkJobCreateIconClick = () => {
+        if (selectedDeviceHeaders) setBenchmarkJobConfigModalOpen(true);
     };
 
     return (
@@ -118,25 +94,22 @@ const EdgeBenchmark = () => {
                         aria-label="add"
                         size="small"
                         sx={{ float: 'right', mr: 2 }}
-                        onClick={() => setBenchmarkJobConfigModalOpen(true)}
+                        onClick={onBenchmarkJobCreateIconClick}
                     >
                         <SettingsIcon />
                     </Fab>
                 </Grid>
             </Grid>
             <DeviceList
-                devices={devices}
-                onDeviceClick={handleDeviceClick}
-                addToCart={handleAddToCart}
-                cartItems={cartItems}
-                setCartItems={setCartItems}
+                deviceHeaders={deviceHeaders}
+                onDeviceClick={onDeviceClick}
+                onDeviceSelectionChange={onDeviceSelectionChange}
             />
-            {benchmarkJobConfigModalOpen ? (
+            {benchmarkJobConfigModalOpen && selectedDeviceHeaders ? (
                 <BenchmarkJobCreateDialog
-                    onCreate={(benchmarkJobCreateMessage: IAlertMessage) =>
-                        setSnackbarMessage(benchmarkJobCreateMessage)
-                    }
-                    handleClose={() => setBenchmarkJobConfigModalOpen(false)}
+                    onCreate={onBenchmarkJobCreate}
+                    onClose={onBenchmarkJobCreateDialogClose}
+                    selectedDeviceHeaders={selectedDeviceHeaders}
                 />
             ) : null}
         </>

@@ -9,34 +9,21 @@
 //
 // SPDX-License-Identifier: MIT
 
-import * as React from 'react';
-import DeviceCard from './DeviceCard';
-import BenchmarkDevice from '../../types/edge-benchmark/IDeviceHeader';
-import Box from '@mui/material/Box';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { useState } from 'react';
-import IBenchmarkDevice from '../../types/edge-benchmark/IDeviceHeader';
-import { LegendToggleRounded } from '@mui/icons-material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { DataGrid } from '@mui/x-data-grid';
 import CancelIcon from '@mui/icons-material/Cancel';
+import { GridRowSelectionModel } from '@mui/x-data-grid';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import IDeviceHeader from '../../types/edge-benchmark/IDeviceHeader';
 
 const DeviceList = ({
-    devices,
+    deviceHeaders,
     onDeviceClick,
-    addToCart,
-    cartItems,
-    setCartItems,
+    onDeviceSelectionChange,
 }: {
-    devices: Array<BenchmarkDevice>;
-    onDeviceClick: (device: BenchmarkDevice) => void;
-    addToCart: (device: BenchmarkDevice) => void;
-    cartItems: BenchmarkDevice[];
-    setCartItems: (cartItems: BenchmarkDevice[]) => void;
+    deviceHeaders: IDeviceHeader[];
+    onDeviceClick: (deviceHeader: IDeviceHeader) => void;
+    onDeviceSelectionChange: (selectedDeviceHeaders: IDeviceHeader[]) => void;
 }) => {
-    const [selectedDevice, setSelectedDevice] = useState<IBenchmarkDevice>();
-    const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-    const [selectedRows, setSelectedRows] = React.useState<IBenchmarkDevice[]>([]);
-
     const columns = [
         { field: 'name', headerName: 'Device Name', width: 500 },
         { field: 'hostname', headerName: 'Hostname', width: 200 },
@@ -48,44 +35,31 @@ const DeviceList = ({
             headerName: 'Online-Status',
             width: 100,
             renderCell: (params: any) => {
-                if (params.value) {
-                    return <CheckCircleIcon color="primary" />;
-                } else {
-                    return <CancelIcon style={{ color: 'red' }} />;
-                }
+                if (params.value) return <CheckCircleIcon color="primary" />;
+                return <CancelIcon style={{ color: 'red' }} />;
             },
         },
     ];
 
-    const handleRowClick = (params: any) => {
-        console.log(params);
-        if (params.field != '__check__') {
-            const device = devices.find((device) => device.ip === params.id);
-            if (device != null) {
-                setDetailsDialogOpen(true);
-                onDeviceClick(device);
-            }
-        } else {
-            console.log('--');
-        }
+    const onCellClick = (params: any) => {
+        if (params.field == '__check__') return;
+
+        const deviceHeader = deviceHeaders.find((deviceHeader) => deviceHeader.ip === params.id);
+        if (deviceHeader != null) onDeviceClick(deviceHeader);
     };
 
     return (
-        <div style={{ height: '500', width: '100%' }}>
-            <DataGrid
-                rows={devices}
-                columns={columns}
-                getRowId={(row: any) => row.ip}
-                onCellClick={handleRowClick}
-                checkboxSelection
-                onRowSelectionModelChange={(ids: any) => {
-                    console.log(ids);
-                    const selectedIDs = new Set(ids);
-                    const selectedRows = devices.filter((row) => selectedIDs.has(row.ip));
-                    setCartItems(selectedRows);
-                }}
-            />
-        </div>
+        <DataGrid
+            rows={deviceHeaders}
+            columns={columns}
+            getRowId={(deviceHeader: IDeviceHeader) => deviceHeader.ip}
+            onCellClick={onCellClick}
+            checkboxSelection
+            onRowSelectionModelChange={(ips: GridRowSelectionModel) => {
+                const selectedDeviceHeaders = deviceHeaders.filter((deviceHeader) => ips.includes(deviceHeader.ip));
+                onDeviceSelectionChange(selectedDeviceHeaders);
+            }}
+        />
     );
 };
 
