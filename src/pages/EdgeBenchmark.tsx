@@ -77,7 +77,7 @@ const EdgeBenchmark = () => {
     };
 
     const onBenchmarkJobCreateIconClick = () => {
-        if (selectedDeviceHeaders) setBenchmarkJobConfigModalOpen(true);
+        if (selectedDeviceHeaders.length) setBenchmarkJobConfigModalOpen(true);
     };
 
     return (
@@ -105,7 +105,7 @@ const EdgeBenchmark = () => {
                 onDeviceClick={onDeviceClick}
                 onDeviceSelectionChange={onDeviceSelectionChange}
             />
-            {benchmarkJobConfigModalOpen && selectedDeviceHeaders ? (
+            {benchmarkJobConfigModalOpen && selectedDeviceHeaders.length ? (
                 <BenchmarkJobCreateDialog
                     onCreate={onBenchmarkJobCreate}
                     onClose={onBenchmarkJobCreateDialogClose}
