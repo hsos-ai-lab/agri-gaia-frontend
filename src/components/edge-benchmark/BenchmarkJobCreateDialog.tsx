@@ -66,13 +66,14 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                     title: 'Inference server protocol',
                     type: 'string',
                     default: 'http',
-                    enum: ['http'],
+                    enum: ['http', 'https'],
                     description: 'Network protocol used by the Inference Server.',
                 },
                 port: {
                     title: 'Inference server port',
                     type: 'integer',
                     description: 'Network port used by the Inference Server.',
+                    default: 8000,
                     minimum: 1,
                     maximum: 65535,
                 },
@@ -93,6 +94,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                     title: 'Batch size',
                     type: 'integer',
                     description: 'Batch size to use for inference requests.',
+                    default: 1,
                     minimum: 1,
                 },
                 warm_up: {
@@ -111,6 +113,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                     title: 'Class count',
                     type: 'integer',
                     description: 'Number of classes present in the inference dataset.',
+                    default: 1000,
                     minimum: 1,
                 },
                 scaling: {
@@ -121,6 +124,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                     description: 'Type of image scaling applied to the inference dataset.',
                 },
             },
+            required: ['protocol', 'port'],
             allOf: [
                 {
                     if: {
@@ -274,11 +278,11 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
         let inferenceClient = {
             protocol: config.protocol,
             host: edgeDevice.host,
+            port: config.port,
             num_workers: config.num_workers,
             samples_per_second: config.samples_per_second,
         };
 
-        // TODO: model_name and model_version can be determined in backend
         inferenceClient = {
             ...{
                 batch_size: config.batch_size,

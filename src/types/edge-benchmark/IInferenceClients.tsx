@@ -12,6 +12,7 @@
 export interface IInferenceClient {
     protocol?: string;
     host: string;
+    port?: number;
     num_workers?: number;
     samples_per_second?: number | null;
 }
