@@ -27,8 +27,8 @@ import IModel from '../../types/IModel';
 import StartIcon from '@mui/icons-material/Start';
 import IDeviceHeader from '../../types/edge-benchmark/IDeviceHeader';
 
-import { DATASETS_PATH, MODELS_PATH } from '../../endpoints';
-import { httpGet, httpPost } from '../../api';
+import { DATASETS_PATH, MODELS_PATH, EDGE_BENCHMARK_START_PATH } from '../../endpoints';
+import { httpGet, httpUpload } from '../../api';
 
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -190,7 +190,8 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
     const [datasets, setDatasets] = useState<Array<IDataset> | undefined>(undefined);
     const [selectedDataset, setSelectedDataset] = useState<string>('');
     const [models, setModels] = useState<Array<IModel> | undefined>(undefined);
-    const [selectedModelConfiguration, setSelectedModelConfiguration] = useState<File | undefined>();
+    const [modelConfiguration, setModelConfiguration] = useState<File | undefined>();
+    const [modelName, setModelName] = useState<string>('');
     const [uploadChunkSize, setUploadChunksize] = useState<string>('');
     const [selectedModel, setSelectedModel] = useState<string>('');
     const [isCreating, setIsCreating] = useState<boolean>(false);
@@ -270,7 +271,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
     const createEdgeBenchmarkStartPayload = (edgeDevice: IEdgeDevice) => {
         const config = benchmarkConfig.values;
 
-        const inferenceClient: IInferenceClient = {
+        let inferenceClient = {
             protocol: config.protocol,
             host: edgeDevice.host,
             num_workers: config.num_workers,
@@ -278,10 +279,8 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
         };
 
         // TODO: model_name and model_version can be determined in backend
-        let tritonInferenceClient: ITritonInferenceClient = {
+        inferenceClient = {
             ...{
-                model_name: config.model_name,
-                model_version: config.model_version,
                 batch_size: config.batch_size,
                 warm_up: config.warm_up,
             },
@@ -290,17 +289,17 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
 
         switch (config.inference_client) {
             case 'TritonDenseNetClient':
-                tritonInferenceClient = {
-                    ...tritonInferenceClient,
-                    ...{ num_classes: config.num_classes, scaling: config.num_classes },
+                inferenceClient = {
+                    ...inferenceClient,
+                    ...{ num_classes: config.num_classes, scaling: config.scaling },
                 };
                 break;
             case 'TritonYoloClient':
-                tritonInferenceClient = {
-                    ...tritonInferenceClient,
+                inferenceClient = {
+                    ...inferenceClient,
                     ...{
                         num_classes: config.num_classes,
-                        scaling: config.num_classes,
+                        scaling: config.scaling,
                         confidence_thres: config.confidence_thres,
                         iou_thres: config.iou_thresh,
                         input_width: config.input_width,
@@ -323,8 +322,18 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
             model_id: selectedModel,
             chunk_size: Number(uploadChunkSize),
             benchmark_config: benchmarkConfigDto,
-            model_metadata: undefined,
         };
+    };
+
+    const startBenchmarkJob = async (formData: FormData) => {
+        await httpUpload(keycloak, `${EDGE_BENCHMARK_START_PATH}`, formData)
+            .then(() => {
+                console.log('Benchmark Job started');
+            })
+            .catch((error) => {
+                console.log(error);
+                setErrorMsg(`Failed to start Benchmark Job: ${error.message}`);
+            });
     };
 
     const onFormSubmit = (form: any) => {
@@ -352,12 +361,10 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
             const formData = new FormData();
             formData.append('payload', JSON.stringify(edgeBenchmarkStartPayload));
 
-            if (selectedModelConfiguration)
-                formData.append('model_metadata', selectedModelConfiguration, selectedModelConfiguration.name);
+            if (modelConfiguration) formData.append('model_metadata', modelConfiguration, modelConfiguration.name);
 
             console.log('Edge Benchmark Job start form data:', Object.fromEntries(formData.entries()));
-
-            // TODO: Send FormData to /edge-benchmark/start
+            startBenchmarkJob(formData);
         }
         setIsCreating(false);
     };
@@ -371,7 +378,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
     };
 
     const onModelConfigurationFileSelectChange = (files: FileList) => {
-        setSelectedModelConfiguration(files[0]);
+        setModelConfiguration(files[0]);
     };
 
     return (
@@ -443,14 +450,16 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                         </FormControl>
                     </Grid>
                     {tritonInferenceClients.includes(benchmarkConfig.values.inference_client) ? (
-                        <Grid item xs={12}>
-                            <FileInput
-                                text="Select Model Configuration"
-                                accept="text/plain"
-                                multiple={false}
-                                onChange={onModelConfigurationFileSelectChange}
-                            />
-                        </Grid>
+                        <>
+                            <Grid item xs={12}>
+                                <FileInput
+                                    text="Select Model Configuration"
+                                    accept="text/plain"
+                                    multiple={false}
+                                    onChange={onModelConfigurationFileSelectChange}
+                                />
+                            </Grid>
+                        </>
                     ) : null}
                     <Grid item xs={12}>
                         <Typography>2. Configure your Benchmark Job:</Typography>
