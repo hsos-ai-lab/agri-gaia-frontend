@@ -9,11 +9,11 @@
 //
 // SPDX-License-Identifier: MIT
 
-import { TritonDenseNetClient, TritonYoloClient } from './IInferenceClients';
-import EdgeDevice from './IEdgeDevice';
+import { ITritonDenseNetClient, ITritonYoloClient } from './IInferenceClients';
+import IEdgeDevice from './IEdgeDevice';
 
-export default interface BenchmarkConfig {
-    edge_device: EdgeDevice;
-    inference_client: TritonDenseNetClient | TritonYoloClient;
+export default interface IBenchmarkConfig {
+    edge_device: IEdgeDevice;
+    inference_client: ITritonDenseNetClient | ITritonYoloClient;
     cpu_only?: boolean;
 }

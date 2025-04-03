@@ -9,7 +9,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-export default interface EdgeDevice {
+export default interface IEdgeDevice {
     protocol?: string;
     host: string;
     port?: number | null;

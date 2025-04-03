@@ -34,7 +34,12 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
-import { Typography } from '@mui/material';
+import { TextField, Typography } from '@mui/material';
+import IBenchmarkConfig from '../../types/edge-benchmark/IBenchmarkConfig';
+import IEdgeDevice from '../../types/edge-benchmark/IEdgeDevice';
+import { IInferenceClient, ITritonInferenceClient } from '../../types/edge-benchmark/IInferenceClients';
+import FormHelperText from '@mui/material/FormHelperText';
+import FileInput from '../common/FileInput';
 
 interface IBenchmarkJobCreateProps {
     selectedDeviceHeaders: IDeviceHeader[];
@@ -44,41 +49,42 @@ interface IBenchmarkJobCreateProps {
 
 export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmarkJobCreateProps) {
     const keycloak = useKeycloak();
+    const tritonInferenceClients = ['TritonDenseNetClient', 'TritonYoloClient'];
 
     const [benchmarkConfig, setBenchmarkConfig] = useState<Record<string, any>>({
         schema: {
             type: 'object',
             properties: {
                 inference_client: {
-                    title: 'Edge Inference Client',
+                    title: 'Edge inference client',
                     type: 'string',
                     default: 'TritonDenseNetClient',
-                    enum: ['TritonDenseNetClient', 'TritonYoloClient'],
+                    enum: tritonInferenceClients,
                     description: 'The type of Edge Inference Client to use.',
                 },
                 protocol: {
-                    title: 'Inference Server Protocol',
+                    title: 'Inference server protocol',
                     type: 'string',
                     default: 'http',
                     enum: ['http'],
                     description: 'Network protocol used by the Inference Server.',
                 },
                 port: {
-                    title: 'Inference Server Port',
+                    title: 'Inference server port',
                     type: 'integer',
                     description: 'Network port used by the Inference Server.',
                     minimum: 1,
                     maximum: 65535,
                 },
                 num_workers: {
-                    title: 'Worker Threads',
+                    title: 'Worker threads',
                     type: 'integer',
                     description: 'Number of worker threads used for pre- and postprocessing inference data.',
                     default: 1,
                     minimum: 1,
                 },
                 samples_per_second: {
-                    title: 'Samples per Second',
+                    title: 'Samples per second',
                     type: 'number',
                     description: 'Limit inference speed to this many samples per second.',
                     minimum: 0,
@@ -93,7 +99,13 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                     title: 'Apply model warmup',
                     type: 'boolean',
                     default: false,
-                    description: 'Apply model warmup at the beginning of inference',
+                    description: 'Apply model warmup at the beginning of inference.',
+                },
+                cpu_only: {
+                    title: 'Benchmark on CPU only',
+                    type: 'boolean',
+                    default: false,
+                    description: 'Run inference only on CPU during benchmarking.',
                 },
                 num_classes: {
                     title: 'Class count',
@@ -164,6 +176,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                                 minimum: 1,
                             },
                         },
+                        required: ['input_width', 'input_height'],
                     },
                 },
                 {
@@ -177,6 +190,8 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
     const [datasets, setDatasets] = useState<Array<IDataset> | undefined>(undefined);
     const [selectedDataset, setSelectedDataset] = useState<string>('');
     const [models, setModels] = useState<Array<IModel> | undefined>(undefined);
+    const [selectedModelConfiguration, setSelectedModelConfiguration] = useState<File | undefined>();
+    const [uploadChunkSize, setUploadChunksize] = useState<string>('');
     const [selectedModel, setSelectedModel] = useState<string>('');
     const [isCreating, setIsCreating] = useState<boolean>(false);
     const [errorMsg, setErrorMsg] = useState<string | undefined>(undefined);
@@ -219,6 +234,99 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
         setBenchmarkConfig({ ...benchmarkConfig, values: form.formData });
     };
 
+    const validateFormInputs = () => {
+        if (!selectedDeviceHeaders.length) {
+            setErrorMsg('Please select at least one device.');
+            return false;
+        }
+
+        if (!selectedDataset) {
+            setErrorMsg('Please select a dataset.');
+            return false;
+        }
+
+        if (!selectedModel) {
+            setErrorMsg('Please select a model.');
+            return false;
+        }
+
+        const config = benchmarkConfig.values;
+        switch (config.inference_client) {
+            case 'TritonYoloClient':
+                if (!config.input_width) {
+                    setErrorMsg('Please provide an input width.');
+                    return false;
+                }
+                if (!config.input_height) {
+                    setErrorMsg('Please provide an input height.');
+                    return false;
+                }
+                break;
+        }
+
+        return true;
+    };
+
+    const createEdgeBenchmarkStartPayload = (edgeDevice: IEdgeDevice) => {
+        const config = benchmarkConfig.values;
+
+        const inferenceClient: IInferenceClient = {
+            protocol: config.protocol,
+            host: edgeDevice.host,
+            num_workers: config.num_workers,
+            samples_per_second: config.samples_per_second,
+        };
+
+        // TODO: model_name and model_version can be determined in backend
+        let tritonInferenceClient: ITritonInferenceClient = {
+            ...{
+                model_name: config.model_name,
+                model_version: config.model_version,
+                batch_size: config.batch_size,
+                warm_up: config.warm_up,
+            },
+            ...inferenceClient,
+        };
+
+        switch (config.inference_client) {
+            case 'TritonDenseNetClient':
+                tritonInferenceClient = {
+                    ...tritonInferenceClient,
+                    ...{ num_classes: config.num_classes, scaling: config.num_classes },
+                };
+                break;
+            case 'TritonYoloClient':
+                tritonInferenceClient = {
+                    ...tritonInferenceClient,
+                    ...{
+                        num_classes: config.num_classes,
+                        scaling: config.num_classes,
+                        confidence_thres: config.confidence_thres,
+                        iou_thres: config.iou_thresh,
+                        input_width: config.input_width,
+                        input_height: config.input_height,
+                    },
+                };
+                break;
+            default:
+                throw new Error(`Unsupported inference client type: ${config.inference_client}`);
+        }
+
+        const benchmarkConfigDto: IBenchmarkConfig = {
+            edge_device: edgeDevice,
+            inference_client: inferenceClient,
+            cpu_only: config.cpu_only,
+        };
+
+        return {
+            dataset_id: selectedDataset,
+            model_id: selectedModel,
+            chunk_size: Number(uploadChunkSize),
+            benchmark_config: benchmarkConfigDto,
+            model_metadata: undefined,
+        };
+    };
+
     const onFormSubmit = (form: any) => {
         setErrorMsg(undefined);
         setBenchmarkConfig({ ...benchmarkConfig, values: form.formData });
@@ -228,22 +336,30 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
         console.log('Selected model:', selectedModel);
         console.log('Benchmark config:', benchmarkConfig.values);
 
-        if (!selectedDeviceHeaders.length) {
-            setErrorMsg('Please select at least one device.');
-            return;
-        }
-
-        if (!selectedDataset) {
-            setErrorMsg('Please select a dataset.');
-            return;
-        }
-
-        if (!selectedModel) {
-            setErrorMsg('Please select a model.');
-            return;
-        }
+        if (!validateFormInputs()) return;
 
         setIsCreating(true);
+        for (const selectedDeviceHeader of selectedDeviceHeaders) {
+            // TODO: Send full connection information as part of the device header
+            const edgeDevice: IEdgeDevice = {
+                protocol: 'http',
+                host: selectedDeviceHeader.hostname,
+                port: 80,
+            };
+            const edgeBenchmarkStartPayload = createEdgeBenchmarkStartPayload(edgeDevice);
+            console.log('Edge Benchmark Job start payload:', edgeBenchmarkStartPayload);
+
+            const formData = new FormData();
+            formData.append('payload', JSON.stringify(edgeBenchmarkStartPayload));
+
+            if (selectedModelConfiguration)
+                formData.append('model_metadata', selectedModelConfiguration, selectedModelConfiguration.name);
+
+            console.log('Edge Benchmark Job start form data:', Object.fromEntries(formData.entries()));
+
+            // TODO: Send FormData to /edge-benchmark/start
+        }
+        setIsCreating(false);
     };
 
     const onDatasetSelectChange = (event: SelectChangeEvent) => {
@@ -252,6 +368,10 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
 
     const onModelSelectChange = (event: SelectChangeEvent) => {
         setSelectedModel(event.target.value);
+    };
+
+    const onModelConfigurationFileSelectChange = (files: FileList) => {
+        setSelectedModelConfiguration(files[0]);
     };
 
     return (
@@ -271,7 +391,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                     </Grid>
                     <Grid item xs={12}>
                         <FormControl fullWidth>
-                            <InputLabel id="dataset">Dataset</InputLabel>
+                            <InputLabel id="dataset">Dataset *</InputLabel>
                             <Select
                                 labelId="dataset"
                                 id="dataset-select"
@@ -286,11 +406,25 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                                         </MenuItem>
                                     ))}
                             </Select>
+                            <FormHelperText>Dataset to use for model inference.</FormHelperText>
                         </FormControl>
                     </Grid>
                     <Grid item xs={12}>
                         <FormControl fullWidth>
-                            <InputLabel id="model">Model</InputLabel>
+                            <TextField
+                                label="Upload chunk size"
+                                variant="outlined"
+                                value={uploadChunkSize}
+                                onChange={(e) => setUploadChunksize(e.target.value)}
+                                type="number"
+                                inputProps={{ inputMode: 'numeric', min: 0 }}
+                            />
+                            <FormHelperText>Number of dataset samples to upload at once.</FormHelperText>
+                        </FormControl>
+                    </Grid>
+                    <Grid item xs={12}>
+                        <FormControl fullWidth>
+                            <InputLabel id="model">Model *</InputLabel>
                             <Select
                                 labelId="model"
                                 id="model-select"
@@ -305,8 +439,19 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                                         </MenuItem>
                                     ))}
                             </Select>
+                            <FormHelperText>Model to benchmark on selected dataset.</FormHelperText>
                         </FormControl>
                     </Grid>
+                    {tritonInferenceClients.includes(benchmarkConfig.values.inference_client) ? (
+                        <Grid item xs={12}>
+                            <FileInput
+                                text="Select Model Configuration"
+                                accept="text/plain"
+                                multiple={false}
+                                onChange={onModelConfigurationFileSelectChange}
+                            />
+                        </Grid>
+                    ) : null}
                     <Grid item xs={12}>
                         <Typography>2. Configure your Benchmark Job:</Typography>
                     </Grid>

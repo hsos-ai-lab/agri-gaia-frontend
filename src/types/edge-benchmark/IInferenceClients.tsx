@@ -9,26 +9,26 @@
 //
 // SPDX-License-Identifier: MIT
 
-export default interface InferenceClient {
+export interface IInferenceClient {
     protocol?: string;
     host: string;
     num_workers?: number;
     samples_per_second?: number | null;
 }
 
-export interface TritonInferenceClient extends InferenceClient {
+export interface ITritonInferenceClient extends IInferenceClient {
     model_name?: string | null;
     model_version?: string;
     batch_size?: number;
     warm_up?: boolean;
 }
 
-export interface TritonDenseNetClient extends TritonInferenceClient {
+export interface ITritonDenseNetClient extends ITritonInferenceClient {
     num_classes?: number;
     scaling?: string | null;
 }
 
-export interface TritonYoloClient extends TritonInferenceClient {
+export interface ITritonYoloClient extends ITritonInferenceClient {
     num_classes?: number;
     scaling?: string | null;
     confidence_thres?: number;

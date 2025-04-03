@@ -9,26 +9,26 @@
 //
 // SPDX-License-Identifier: MIT
 
-export interface Latency {
+export interface ILatency {
     average: number;
     percentiles: Record<number, number>;
 }
 
-export interface PerformanceResult {
+export interface IPerformanceResult {
     total_time: number;
     sample_count: number;
     samples_per_second: number;
-    latency: Latency;
+    latency: ILatency;
 }
 
-export interface InferPerformance {
-    preprocess: PerformanceResult;
-    inference: PerformanceResult;
-    postprocess: PerformanceResult;
+export interface IInferPerformance {
+    preprocess: IPerformanceResult;
+    inference: IPerformanceResult;
+    postprocess: IPerformanceResult;
     warmup?: number | null;
 }
 
-export default interface BenchmarkInferResult {
-    performance: InferPerformance;
+export default interface IBenchmarkInferResult {
+    performance: IInferPerformance;
     results: Record<string, any>;
 }
