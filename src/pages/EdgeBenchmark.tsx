@@ -9,17 +9,18 @@
 //
 // SPDX-License-Identifier: MIT
 
-import { httpGet } from '../api';
-import Fab from '@mui/material/Fab';
 import { useEffect, useState } from 'react';
+import Fab from '@mui/material/Fab';
 import { Grid, Typography } from '@mui/material';
+import SettingsIcon from '@mui/icons-material/Settings';
 import IAlertMessage from '../types/IAlertMessage';
 import useKeycloak from '../contexts/KeycloakContext';
-import SettingsIcon from '@mui/icons-material/Settings';
+import AlertSnackbar from '../components/common/AlertSnackbar';
 import DeviceList from '../components/edge-benchmark/DeviceList';
 import IDeviceHeader from '../types/edge-benchmark/IDeviceHeader';
 import { EDGE_BENCHMARK_DEVICE_PATH, EDGE_BENCHMARK_DEVICE_HEADER_PATH } from '../endpoints';
 import BenchmarkJobCreateDialog from '../components/edge-benchmark/BenchmarkJobCreateDialog';
+import { httpGet } from '../api';
 
 const EdgeBenchmark = () => {
     const keycloak = useKeycloak();
@@ -112,6 +113,12 @@ const EdgeBenchmark = () => {
                     selectedDeviceHeaders={selectedDeviceHeaders}
                 />
             ) : null}
+            <AlertSnackbar
+                message={snackbarMessage.message}
+                severity={snackbarMessage.severity}
+                open={snackbarMessage.open}
+                onClose={() => setSnackbarMessage({ ...snackbarMessage, open: false })}
+            />
         </>
     );
 };

@@ -10,36 +10,35 @@
 // SPDX-License-Identifier: MIT
 
 import { useEffect, useState } from 'react';
-import useKeycloak from '../../contexts/KeycloakContext';
+import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
+import Alert from '@mui/material/Alert';
 import Dialog from '@mui/material/Dialog';
-
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import Grid from '@mui/material/Grid';
-import Alert from '@mui/material/Alert';
-import IAlertMessage from '../../types/IAlertMessage';
 import Button from '@mui/material/Button';
-import Box from '@mui/material/Box';
-import Form from '@rjsf/material-ui/v5';
-import IDataset from '../../types/IDataset';
-import IModel from '../../types/IModel';
 import StartIcon from '@mui/icons-material/Start';
-import IDeviceHeader from '../../types/edge-benchmark/IDeviceHeader';
-
-import { DATASETS_PATH, MODELS_PATH, EDGE_BENCHMARK_START_PATH } from '../../endpoints';
-import { httpGet, httpUpload } from '../../api';
-
+import LoadingButton from '@mui/lab/LoadingButton';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
+import FormHelperText from '@mui/material/FormHelperText';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import { TextField, Typography } from '@mui/material';
-import IBenchmarkConfig from '../../types/edge-benchmark/IBenchmarkConfig';
+import Form from '@rjsf/material-ui/v5';
+import IDataset from '../../types/IDataset';
+import IModel from '../../types/IModel';
+import useKeycloak from '../../contexts/KeycloakContext';
+import IAlertMessage from '../../types/IAlertMessage';
+import IDeviceHeader from '../../types/edge-benchmark/IDeviceHeader';
 import IEdgeDevice from '../../types/edge-benchmark/IEdgeDevice';
-import { IInferenceClient, ITritonInferenceClient } from '../../types/edge-benchmark/IInferenceClients';
-import FormHelperText from '@mui/material/FormHelperText';
 import FileInput from '../common/FileInput';
+import useApplicationTasks from '../../contexts/TasksContext';
+import IBenchmarkConfig from '../../types/edge-benchmark/IBenchmarkConfig';
+import { IInferenceClient } from '../../types/edge-benchmark/IInferenceClients';
+import { DATASETS_PATH, MODELS_PATH, EDGE_BENCHMARK_START_PATH } from '../../endpoints';
+import { httpGet, httpUpload } from '../../api';
 
 interface IBenchmarkJobCreateProps {
     selectedDeviceHeaders: IDeviceHeader[];
@@ -49,6 +48,8 @@ interface IBenchmarkJobCreateProps {
 
 export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmarkJobCreateProps) {
     const keycloak = useKeycloak();
+    const tasks = useApplicationTasks();
+
     const tritonInferenceClients = ['TritonDenseNetClient', 'TritonYoloClient'];
 
     const [benchmarkConfig, setBenchmarkConfig] = useState<Record<string, any>>({
@@ -195,10 +196,9 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
     const [selectedDataset, setSelectedDataset] = useState<string>('');
     const [models, setModels] = useState<Array<IModel> | undefined>(undefined);
     const [modelConfiguration, setModelConfiguration] = useState<File | undefined>();
-    const [modelName, setModelName] = useState<string>('');
     const [uploadChunkSize, setUploadChunksize] = useState<string>('');
     const [selectedModel, setSelectedModel] = useState<string>('');
-    const [isCreating, setIsCreating] = useState<boolean>(false);
+    const [isCreating, setIsCreating] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | undefined>(undefined);
 
     const fetchDatasets = async () => {
@@ -229,11 +229,6 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
         fetchDatasets();
         fetchModels();
     }, [keycloak]);
-
-    const onDialogClose = () => {
-        if (isCreating) return;
-        onClose();
-    };
 
     const onFormChange = (form: any) => {
         setBenchmarkConfig({ ...benchmarkConfig, values: form.formData });
@@ -275,7 +270,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
     const createEdgeBenchmarkStartPayload = (edgeDevice: IEdgeDevice) => {
         const config = benchmarkConfig.values;
 
-        let inferenceClient = {
+        let inferenceClient: IInferenceClient = {
             protocol: config.protocol,
             host: edgeDevice.host,
             port: config.port,
@@ -329,10 +324,33 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
         };
     };
 
-    const startBenchmarkJob = async (formData: FormData) => {
-        await httpUpload(keycloak, `${EDGE_BENCHMARK_START_PATH}`, formData)
-            .then(() => {
-                console.log('Benchmark Job started');
+    const startBenchmarkJob = async (formData: FormData, edgeDevice: IEdgeDevice) => {
+        await httpUpload(keycloak, `${EDGE_BENCHMARK_START_PATH}`, formData, undefined, true)
+            .then(({ headers }) => {
+                httpGet(keycloak, headers.get('Location'))
+                    .then((task) => {
+                        onCreate({
+                            message: `Started Benchmark Job on device ${edgeDevice.host}.`,
+                            severity: 'info',
+                            open: true,
+                        });
+                        tasks?.addServerBackgroundTask(keycloak, tasks, task, () => {
+                            onCreate({
+                                message: `Benchmark Job on device ${edgeDevice.host} finished successfully.`,
+                                severity: 'success',
+                                open: true,
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        onCreate({
+                            message: `Benchmark Job on device ${edgeDevice.host} has failed.`,
+                            severity: 'error',
+                            open: true,
+                        });
+                        console.log(error);
+                    });
+                setErrorMsg(undefined);
             })
             .catch((error) => {
                 console.log(error);
@@ -340,14 +358,11 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
             });
     };
 
-    const onFormSubmit = (form: any) => {
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const onFormSubmit = async (form: any) => {
         setErrorMsg(undefined);
         setBenchmarkConfig({ ...benchmarkConfig, values: form.formData });
-
-        console.log('Selected device headers:', selectedDeviceHeaders);
-        console.log('Selected dataset:', selectedDataset);
-        console.log('Selected model:', selectedModel);
-        console.log('Benchmark config:', benchmarkConfig.values);
 
         if (!validateFormInputs()) return;
 
@@ -368,9 +383,11 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
             if (modelConfiguration) formData.append('model_metadata', modelConfiguration, modelConfiguration.name);
 
             console.log('Edge Benchmark Job start form data:', Object.fromEntries(formData.entries()));
-            startBenchmarkJob(formData);
+            startBenchmarkJob(formData, edgeDevice);
+            await sleep(5000);
         }
         setIsCreating(false);
+        onClose();
     };
 
     const onDatasetSelectChange = (event: SelectChangeEvent) => {
@@ -386,7 +403,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
     };
 
     return (
-        <Dialog open={true} onClose={onDialogClose} fullWidth maxWidth="xs">
+        <Dialog open={true} onClose={onClose} fullWidth maxWidth="xs">
             <DialogTitle>Create Benchmark Job</DialogTitle>
             <DialogContent>
                 <Grid container justifyContent="space-between" spacing={2}>
@@ -479,16 +496,22 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                             liveValidate={true}
                         >
                             <Box display="flex" justifyContent="center" mt={1}>
-                                <Button type="submit" variant="contained" endIcon={<StartIcon />}>
+                                <LoadingButton
+                                    type="submit"
+                                    variant="contained"
+                                    loading={isCreating}
+                                    loadingPosition="end"
+                                    endIcon={<StartIcon />}
+                                >
                                     Start Benchmark Job
-                                </Button>
+                                </LoadingButton>
                             </Box>
                         </Form>
                     </Grid>
                 </Grid>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onDialogClose}>Close</Button>
+                <Button onClick={onClose}>Close</Button>
             </DialogActions>
         </Dialog>
     );
