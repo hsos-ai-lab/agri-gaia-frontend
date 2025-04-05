@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
+import { Grid, Divider } from '@mui/material';
 import Alert from '@mui/material/Alert';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -204,11 +204,10 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
     const fetchDatasets = async () => {
         await httpGet(keycloak, DATASETS_PATH)
             .then((_datasets) => {
-                console.log('Datasets:', _datasets);
                 setDatasets(_datasets);
             })
             .catch((error) => {
-                console.log(error);
+                console.error(error);
                 setErrorMsg(`Fetching datasets: ${error.message}`);
             });
     };
@@ -216,11 +215,10 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
     const fetchModels = async () => {
         await httpGet(keycloak, MODELS_PATH)
             .then((_models) => {
-                console.log('Models:', _models);
                 setModels(_models);
             })
             .catch((error) => {
-                console.log(error);
+                console.error(error);
                 setErrorMsg(`Fetching models: ${error.message}`);
             });
     };
@@ -251,6 +249,17 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
         }
 
         const config = benchmarkConfig.values;
+
+        if (!config.protocol) {
+            setErrorMsg('Please select a protocol for the inference client.');
+            return false;
+        }
+
+        if (!config.port) {
+            setErrorMsg('Please select a port for the inference client.');
+            return false;
+        }
+
         switch (config.inference_client) {
             case 'TritonYoloClient':
                 if (!config.input_width) {
@@ -348,12 +357,12 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                             severity: 'error',
                             open: true,
                         });
-                        console.log(error);
+                        console.error(error);
                     });
                 setErrorMsg(undefined);
             })
             .catch((error) => {
-                console.log(error);
+                console.error(error);
                 setErrorMsg(`Failed to start Benchmark Job: ${error.message}`);
             });
     };
@@ -375,14 +384,11 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                 port: 80,
             };
             const edgeBenchmarkStartPayload = createEdgeBenchmarkStartPayload(edgeDevice);
-            console.log('Edge Benchmark Job start payload:', edgeBenchmarkStartPayload);
 
             const formData = new FormData();
             formData.append('payload', JSON.stringify(edgeBenchmarkStartPayload));
-
             if (modelConfiguration) formData.append('model_metadata', modelConfiguration, modelConfiguration.name);
 
-            console.log('Edge Benchmark Job start form data:', Object.fromEntries(formData.entries()));
             startBenchmarkJob(formData, edgeDevice);
             await sleep(5000);
         }
@@ -403,17 +409,10 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
     };
 
     return (
-        <Dialog open={true} onClose={onClose} fullWidth maxWidth="xs">
-            <DialogTitle>Create Benchmark Job</DialogTitle>
+        <Dialog open onClose={onClose} fullWidth maxWidth="xs">
+            <DialogTitle>Create a new benchmark job</DialogTitle>
             <DialogContent>
                 <Grid container justifyContent="space-between" spacing={2}>
-                    <Grid item xs={12}>
-                        {errorMsg ? (
-                            <Alert severity="error" sx={{ mb: 2 }}>
-                                {errorMsg}
-                            </Alert>
-                        ) : null}
-                    </Grid>
                     <Grid item xs={12}>
                         <Typography>1. Select your dataset and model:</Typography>
                     </Grid>
@@ -474,7 +473,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                         <>
                             <Grid item xs={12}>
                                 <FileInput
-                                    text="Select Model Configuration"
+                                    text="Select model configuration"
                                     accept="text/plain"
                                     multiple={false}
                                     onChange={onModelConfigurationFileSelectChange}
@@ -483,7 +482,10 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                         </>
                     ) : null}
                     <Grid item xs={12}>
-                        <Typography>2. Configure your Benchmark Job:</Typography>
+                        <Divider />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Typography>2. Configure your benchmark job:</Typography>
                     </Grid>
                     <Grid item xs={12} mt={-2}>
                         <Form
@@ -495,17 +497,28 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                             omitExtraData={true}
                             liveValidate={true}
                         >
-                            <Box display="flex" justifyContent="center" mt={1}>
-                                <LoadingButton
-                                    type="submit"
-                                    variant="contained"
-                                    loading={isCreating}
-                                    loadingPosition="end"
-                                    endIcon={<StartIcon />}
-                                >
-                                    Start Benchmark Job
-                                </LoadingButton>
-                            </Box>
+                            <Grid container justifyContent="center" alignItems="center">
+                                <Grid item xs={12}>
+                                    {errorMsg ? (
+                                        <Alert severity="error" sx={{ mb: 2 }}>
+                                            {errorMsg}
+                                        </Alert>
+                                    ) : null}
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Box display="flex" justifyContent="center">
+                                        <LoadingButton
+                                            type="submit"
+                                            variant="contained"
+                                            loading={isCreating}
+                                            loadingPosition="end"
+                                            endIcon={<StartIcon />}
+                                        >
+                                            Start Benchmark Job
+                                        </LoadingButton>
+                                    </Box>
+                                </Grid>
+                            </Grid>
                         </Form>
                     </Grid>
                 </Grid>

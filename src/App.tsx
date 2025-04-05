@@ -27,7 +27,7 @@ import EdgeGroups from './pages/EdgeGroups';
 import IntegratedServices from './pages/IntegratedServices';
 import ContainerImageManagement from './pages/ContainerImageManagement';
 import EdgeBenchmark from './pages/EdgeBenchmark';
-import EdgeBenchmarkOverview from './pages/EdgeBenchmarkOverview';
+import EdgeBenchmarkJobs from './pages/EdgeBenchmarkJobs';
 import InferenceContainerTemplateManagement from './pages/InferenceContainerTemplateManagement';
 
 import './style/App.css';
@@ -63,7 +63,7 @@ const AppRoutes = () => (
         <Route path="/network" element={<Network />} />
         <Route path="/licenses" element={<Licenses />} />
         <Route path="/edge-benchmark" element={<EdgeBenchmark />} />
-        <Route path="/edge-benchmark-overview" element={<EdgeBenchmarkOverview />} />
+        <Route path="/edge-benchmark-jobs" element={<EdgeBenchmarkJobs />} />
     </Routes>
 );
 

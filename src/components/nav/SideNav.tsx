@@ -41,6 +41,8 @@ import GroupWorkIcon from '@mui/icons-material/GroupWork';
 import ApiOutlinedIcon from '@mui/icons-material/ApiOutlined';
 import PeopleIcon from '@mui/icons-material/People';
 import SpeedIcon from '@mui/icons-material/Speed';
+import CreateIcon from '@mui/icons-material/Create';
+import ListIcon from '@mui/icons-material/List';
 
 import { useNavigate } from 'react-router-dom';
 import { createSubdomainUrl, openInNewTab } from '../../util';
@@ -144,12 +146,12 @@ const internalLinks: Array<IListItem> = [
             {
                 text: 'Create Job',
                 link: '/edge-benchmark',
-                icon: <SpeedIcon />,
+                icon: <CreateIcon />,
             },
             {
-                text: 'Job Results',
-                link: '/edge-benchmark-overview',
-                icon: <SpeedIcon />,
+                text: 'Job Overview',
+                link: '/edge-benchmark-jobs',
+                icon: <ListIcon />,
             },
         ],
     },

@@ -10,7 +10,6 @@
 // SPDX-License-Identifier: MIT
 
 import React, { useState } from 'react';
-import BenchmarkDevice from '../../types/edge-benchmark/IDeviceHeader';
 import {
     Button,
     Collapse,
@@ -21,28 +20,21 @@ import {
     List,
     ListItem,
     ListItemText,
+    ListItemButton,
 } from '@mui/material';
-import { LoadingButton } from '@mui/lab';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
+import IDeviceHeader from '../../types/edge-benchmark/IDeviceHeader';
 
-const DeviceDetails = ({
-    device,
+const BenchmarkDeviceDetailsModal = ({
+    deviceHeader,
     deviceInfo,
-    cartItems,
     onClose,
-    addToCart,
 }: {
-    device: BenchmarkDevice;
-    deviceInfo: JSON;
-    cartItems: BenchmarkDevice[];
+    deviceHeader: IDeviceHeader;
+    deviceInfo: Record<string, any>;
     onClose: () => void;
-    addToCart: (device: BenchmarkDevice) => void;
 }) => {
     const [openItems, setOpenItems] = useState({});
-
-    const onClick = () => {
-        addToCart(device);
-    };
 
     const handleToggle = (id: string) => {
         setOpenItems((prev) => ({ ...prev, [id]: !prev[id as keyof typeof prev] }));
@@ -54,10 +46,10 @@ const DeviceDetails = ({
             if (typeof data[key as keyof typeof data] === 'object' && data[key as keyof typeof data] !== null) {
                 return (
                     <React.Fragment key={id}>
-                        <ListItem button onClick={() => handleToggle(id)}>
+                        <ListItemButton onClick={() => handleToggle(id)}>
                             <ListItemText primary={key} />
                             {openItems[id as keyof typeof openItems] ? <ExpandLess /> : <ExpandMore />}
-                        </ListItem>
+                        </ListItemButton>
                         <Collapse in={openItems[id as keyof typeof openItems]} timeout="auto" unmountOnExit>
                             <List component="div" disablePadding>
                                 {renderData(data[key as keyof typeof data], id)}
@@ -75,16 +67,16 @@ const DeviceDetails = ({
     };
 
     return (
-        <Dialog open={true} onClose={onClose} fullWidth={true} maxWidth="sm">
-            <DialogTitle>{device.name}</DialogTitle>
+        <Dialog open onClose={onClose} fullWidth maxWidth="sm">
+            <DialogTitle>Information for {deviceHeader.name}</DialogTitle>
             <DialogContent dividers>
                 <List>{renderData(deviceInfo)}</List>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClick}>{'Add to Cart'}</Button>
+                <Button onClick={onClose}>Close</Button>
             </DialogActions>
         </Dialog>
     );
 };
 
-export default DeviceDetails;
+export default BenchmarkDeviceDetailsModal;

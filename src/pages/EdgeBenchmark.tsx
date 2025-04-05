@@ -18,18 +18,17 @@ import useKeycloak from '../contexts/KeycloakContext';
 import AlertSnackbar from '../components/common/AlertSnackbar';
 import DeviceList from '../components/edge-benchmark/DeviceList';
 import IDeviceHeader from '../types/edge-benchmark/IDeviceHeader';
-import { EDGE_BENCHMARK_DEVICE_PATH, EDGE_BENCHMARK_DEVICE_HEADER_PATH } from '../endpoints';
+import { EDGE_BENCHMARK_DEVICE_HEADER_PATH } from '../endpoints';
 import BenchmarkJobCreateDialog from '../components/edge-benchmark/BenchmarkJobCreateDialog';
 import { httpGet } from '../api';
 
 const EdgeBenchmark = () => {
     const keycloak = useKeycloak();
-    const [deviceHeaders, setDeviceHeaders] = useState<IDeviceHeader[]>([]);
-    const [selectedDeviceHeader, setSelectedDeviceHeader] = useState<IDeviceHeader>();
-    const [selectedDeviceInfo, setSelectedDeviceInfo] = useState<Record<string, any>>();
-    const [selectedDeviceHeaders, setSelectedDeviceHeaders] = useState<IDeviceHeader[]>([]);
 
+    const [deviceHeaders, setDeviceHeaders] = useState<IDeviceHeader[]>([]);
+    const [selectedDeviceHeaders, setSelectedDeviceHeaders] = useState<IDeviceHeader[]>([]);
     const [benchmarkJobConfigModalOpen, setBenchmarkJobConfigModalOpen] = useState(false);
+
     const [snackbarMessage, setSnackbarMessage] = useState<IAlertMessage>({
         message: undefined,
         severity: undefined,
@@ -46,26 +45,13 @@ const EdgeBenchmark = () => {
                 const deviceHeaders = deviceHeader as IDeviceHeader[];
                 deviceHeaders.sort((a, b) => a.name.localeCompare(b.name));
                 setDeviceHeaders(deviceHeaders);
-                console.log('Device headers :', deviceHeaders);
             })
             .catch((error) => {
                 console.error(error);
             });
     };
 
-    const onDeviceClick = (deviceHeader: IDeviceHeader) => {
-        setSelectedDeviceHeader(deviceHeader);
-        const hostname = deviceHeader.hostname;
-        httpGet(keycloak, `${EDGE_BENCHMARK_DEVICE_PATH}/${hostname}/info`)
-            .then((deviceInfo) => {
-                setSelectedDeviceInfo(deviceInfo);
-                console.log(`Info for selected device '${hostname}':`, deviceInfo);
-            })
-            .catch((error) => console.error(error));
-    };
-
     const onDeviceSelectionChange = (selectedDeviceHeaders: IDeviceHeader[]) => {
-        console.log('Select device headers:', selectedDeviceHeaders);
         setSelectedDeviceHeaders(selectedDeviceHeaders);
     };
 
@@ -89,23 +75,24 @@ const EdgeBenchmark = () => {
                         Edge Benchmark
                     </Typography>
                 </Grid>
-                <Grid item xs={6}>
-                    <Fab
-                        color="primary"
-                        aria-label="add"
-                        size="small"
-                        sx={{ float: 'right', mr: 2 }}
-                        onClick={onBenchmarkJobCreateIconClick}
-                    >
-                        <SettingsIcon />
-                    </Fab>
+                {selectedDeviceHeaders.length ? (
+                    <Grid item xs={6}>
+                        <Fab
+                            color="primary"
+                            aria-label="add"
+                            size="small"
+                            sx={{ float: 'right', mr: 2 }}
+                            onClick={onBenchmarkJobCreateIconClick}
+                        >
+                            <SettingsIcon />
+                        </Fab>
+                    </Grid>
+                ) : null}
+                <Grid item xs={12}>
+                    <Typography>Create benchmark jobs by selecting edge devices from the list below.</Typography>
                 </Grid>
             </Grid>
-            <DeviceList
-                deviceHeaders={deviceHeaders}
-                onDeviceClick={onDeviceClick}
-                onDeviceSelectionChange={onDeviceSelectionChange}
-            />
+            <DeviceList deviceHeaders={deviceHeaders} onDeviceSelectionChange={onDeviceSelectionChange} />
             {benchmarkJobConfigModalOpen && selectedDeviceHeaders.length ? (
                 <BenchmarkJobCreateDialog
                     onCreate={onBenchmarkJobCreate}
