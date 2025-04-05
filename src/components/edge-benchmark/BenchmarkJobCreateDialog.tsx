@@ -202,7 +202,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
     const [errorMsg, setErrorMsg] = useState<string | undefined>(undefined);
 
     const fetchDatasets = async () => {
-        await httpGet(keycloak, DATASETS_PATH)
+        httpGet(keycloak, DATASETS_PATH)
             .then((_datasets) => {
                 setDatasets(_datasets);
             })
@@ -213,7 +213,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
     };
 
     const fetchModels = async () => {
-        await httpGet(keycloak, MODELS_PATH)
+        httpGet(keycloak, MODELS_PATH)
             .then((_models) => {
                 setModels(_models);
             })
@@ -334,7 +334,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
     };
 
     const startBenchmarkJob = async (formData: FormData, edgeDevice: IEdgeDevice) => {
-        await httpUpload(keycloak, `${EDGE_BENCHMARK_START_PATH}`, formData, undefined, true)
+        httpUpload(keycloak, `${EDGE_BENCHMARK_START_PATH}`, formData, undefined, true)
             .then(({ headers }) => {
                 httpGet(keycloak, headers.get('Location'))
                     .then((task) => {

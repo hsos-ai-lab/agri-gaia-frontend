@@ -105,11 +105,11 @@ const DeviceList = ({
     const onShowDeviceInfoClick = (deviceHeader: IDeviceHeader) => {
         setSelectedDeviceHeader(deviceHeader);
         const hostname = deviceHeader.hostname;
-        setDeviceInfoLoadingStates({ [hostname]: true, ...deviceInfoLoadingStates });
+        setDeviceInfoLoadingStates({ ...deviceInfoLoadingStates, [hostname]: true });
         httpGet(keycloak, `${EDGE_BENCHMARK_DEVICE_PATH}/${hostname}/info`)
             .then((deviceInfo) => {
                 setSelectedDeviceInfo(deviceInfo);
-                setDeviceInfoLoadingStates({ [hostname]: false, ...deviceInfoLoadingStates });
+                setDeviceInfoLoadingStates({ ...deviceInfoLoadingStates, [hostname]: false });
                 setDeviceInfoModalOpen(true);
             })
             .catch((error) => console.error('Error fetching device info:', error));

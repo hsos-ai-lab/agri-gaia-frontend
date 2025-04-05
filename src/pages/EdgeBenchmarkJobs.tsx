@@ -9,11 +9,10 @@
 //
 // SPDX-License-Identifier: MIT
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Grid, Typography } from '@mui/material';
 import { EDGE_BENCHMARK_JOBS_PATH } from '../endpoints';
 import useKeycloak from '../contexts/KeycloakContext';
-import { useGridLogger } from '@mui/x-data-grid';
 import IBenchmarkJob from '../types/edge-benchmark/IBenchmarkJob';
 import { httpGet } from '../api';
 
@@ -27,8 +26,9 @@ const EdgeBenchmarkJobs = () => {
 
     const fetchBenchmarkJobs = async () => {
         httpGet(keycloak, EDGE_BENCHMARK_JOBS_PATH)
-            .then((_benchmarkJobs) => {
+            .then((_benchmarkJobs: IBenchmarkJob[]) => {
                 setBenchmarkJobs(_benchmarkJobs);
+                console.log(_benchmarkJobs);
             })
             .catch((error) => {
                 console.error('Failed to fetch benchmark jobs', error);
