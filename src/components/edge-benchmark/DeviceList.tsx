@@ -38,8 +38,8 @@ const DeviceList = ({
     const [deviceInfoLoadingStates, setDeviceInfoLoadingStates] = useState<Record<string, boolean>>({});
 
     const columns = [
-        { field: 'name', headerName: 'Device name', flex: 1 },
-        { field: 'hostname', headerName: 'Hostname', flex: 1 },
+        { field: 'name', headerName: 'Device name', width: 400 },
+        { field: 'hostname', headerName: 'Device identifier', flex: 1 },
         { field: 'ip', headerName: 'Device IP', flex: 1 },
         {
             field: 'timestamp',
@@ -60,9 +60,17 @@ const DeviceList = ({
             },
         },
         {
-            field: 'online',
-            headerName: 'Online status',
+            field: 'heartbeat_interval',
+            headerName: 'Heartbeat',
             flex: 1,
+            renderCell: (params: any) => {
+                return `every ${params.value} seconds`;
+            },
+        },
+        {
+            field: 'online',
+            headerName: 'Online',
+            width: 100,
             renderCell: (params: any) => {
                 return params.value ? <CheckCircleIcon color="primary" /> : <CancelIcon style={{ color: 'red' }} />;
             },
@@ -70,7 +78,7 @@ const DeviceList = ({
         {
             field: 'actions',
             headerName: 'Actions',
-            flex: 1,
+            width: 100,
             renderCell: (params: any) => {
                 const deviceHeader = params.row;
                 const hostname = deviceHeader.hostname;

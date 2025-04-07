@@ -43,7 +43,7 @@ const EdgeBenchmark = () => {
         httpGet(keycloak, EDGE_BENCHMARK_DEVICE_HEADER_PATH)
             .then((deviceHeader) => {
                 const deviceHeaders = deviceHeader as IDeviceHeader[];
-                deviceHeaders.sort((a, b) => a.name.localeCompare(b.name));
+                deviceHeaders.sort((a, b) => a.hostname.localeCompare(b.hostname));
                 setDeviceHeaders(deviceHeaders);
             })
             .catch((error) => {
