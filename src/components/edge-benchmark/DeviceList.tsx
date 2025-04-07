@@ -64,12 +64,11 @@ const DeviceList = ({
             headerName: 'Online status',
             flex: 1,
             renderCell: (params: any) => {
-                if (params.value) return <CheckCircleIcon color="primary" />;
-                return <CancelIcon style={{ color: 'red' }} />;
+                return params.value ? <CheckCircleIcon color="primary" /> : <CancelIcon style={{ color: 'red' }} />;
             },
         },
         {
-            field: 'device_info',
+            field: 'actions',
             headerName: 'Actions',
             flex: 1,
             renderCell: (params: any) => {
@@ -80,16 +79,13 @@ const DeviceList = ({
                         <span>
                             <LoadingButton
                                 color="info"
-                                variant="contained"
                                 loading={deviceInfoLoadingStates[hostname]}
-                                loadingPosition="end"
-                                endIcon={<InfoIcon />}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onShowDeviceInfoClick(deviceHeader);
                                 }}
                             >
-                                Info
+                                <InfoIcon />
                             </LoadingButton>
                         </span>
                     </Tooltip>

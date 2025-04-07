@@ -11,8 +11,9 @@
 
 import { useEffect, useState } from 'react';
 import { Grid, Typography } from '@mui/material';
-import { EDGE_BENCHMARK_JOBS_PATH } from '../endpoints';
 import useKeycloak from '../contexts/KeycloakContext';
+import { EDGE_BENCHMARK_JOBS_PATH } from '../endpoints';
+import JobList from '../components/edge-benchmark/JobList';
 import IBenchmarkJob from '../types/edge-benchmark/IBenchmarkJob';
 import { httpGet } from '../api';
 
@@ -36,13 +37,19 @@ const EdgeBenchmarkJobs = () => {
     };
 
     return (
-        <Grid container justifyContent="space-between">
-            <Grid item xs={6}>
-                <Typography variant="h4" component="h4">
-                    Edge Benchmark Jobs
-                </Typography>
+        <>
+            <Grid container justifyContent="space-between" sx={{ mb: 2 }}>
+                <Grid item xs={12}>
+                    <Typography variant="h4" component="h4">
+                        Edge Benchmark Jobs
+                    </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                    <Typography>Download and compare historic benchmark results listed below.</Typography>
+                </Grid>
             </Grid>
-        </Grid>
+            <JobList jobs={benchmarkJobs} />
+        </>
     );
 };
 
