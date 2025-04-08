@@ -31,7 +31,7 @@ export default function ({
         <>
             <Dialog open onClose={onClose} fullWidth maxWidth="sm">
                 <DialogTitle>
-                    Results preview for {benchmarkJob.model.name} with {benchmarkJob.dataset.name} on
+                    Results preview for {benchmarkJob.model.name} with {benchmarkJob.dataset.name} on{' '}
                     {benchmarkJob.edge_device}
                 </DialogTitle>
                 <DialogContent>
