@@ -12,26 +12,60 @@
 import { useState } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import DownloadIcon from '@mui/icons-material/Download';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import DeleteIcon from '@mui/icons-material/Delete';
 import IBenchmarkJob from '../../types/edge-benchmark/IBenchmarkJob';
 import Tooltip from '@mui/material/Tooltip';
 import LoadingButton from '@mui/lab/LoadingButton';
-import Button from '@mui/material/Button';
 import useKeycloak from '../../contexts/KeycloakContext';
+import { httpGet, httpDelete } from '../../api';
+import { EDGE_BENCHMARK_JOBS_PATH, EDGE_BENCHMARK_RESULTS_PATH } from '../../endpoints';
+import { downloadBlob } from '../../util';
+import JobResultsPreviewModal from './JobResultsPreviewModal';
 
-const JobList = ({ jobs }: { jobs: IBenchmarkJob[] }) => {
+const JobList = ({ jobs, onDelete }: { jobs: IBenchmarkJob[]; onDelete: () => void }) => {
     const keycloak = useKeycloak();
+    document.documentElement.setAttribute('data-color-mode', 'light');
 
-    const [jobResultsLoadingStates, setJobResultsLoadingStates] = useState<Record<string, boolean>>({});
+    const [jobResultsDownloadStates, setJobResultsDownloadStates] = useState<Record<string, boolean>>({});
+    const [jobDeleteStates, setJobDeleteStates] = useState<Record<string, boolean>>({});
+    const [jobResultsPreviewStates, setJobResultsPreviewStates] = useState<Record<string, boolean>>({});
 
-    // TODO: Download results as JSON file
-    const onJobResultsDownloadClick = (job: IBenchmarkJob) => {
-        console.log('Download', job);
+    const [jobResultsPreviewModalOpen, setJobResultsPreviewModalOpen] = useState(false);
+    const [selectedBenchmarkJobResult, setSelectedBenchmarkJobResult] = useState<Record<string, any>>();
+    const [selectedBenchmarkJob, setSelectedBenchmarkJob] = useState<IBenchmarkJob>();
+
+    const onJobResultsDownloadClick = async (job: IBenchmarkJob) => {
+        setJobResultsDownloadStates({ ...jobResultsDownloadStates, [job.id]: true });
+        httpGet(keycloak, `${EDGE_BENCHMARK_RESULTS_PATH}/${job.id}/download`)
+            .then(({ blob, fileName }) => downloadBlob(blob, fileName))
+            .catch((error) => console.error(error))
+            .finally(() => setJobResultsDownloadStates({ ...jobResultsDownloadStates, [job.id]: false }));
     };
 
-    // TODO: Open minio location in new tab
-    const onJobResultsOpenClick = (job: IBenchmarkJob) => {
-        console.log('Open', job);
+    const onJobResultsPreviewClick = async (job: IBenchmarkJob) => {
+        setJobResultsPreviewStates({ ...jobResultsPreviewStates, [job.id]: true });
+        httpGet(keycloak, `${EDGE_BENCHMARK_RESULTS_PATH}/${job.id}`)
+            .then((results) => {
+                delete results.benchmark_job.inference_results.results;
+                setSelectedBenchmarkJob(job);
+                setSelectedBenchmarkJobResult(results);
+                setJobResultsPreviewModalOpen(true);
+            })
+            .catch((error) => console.error(error))
+            .finally(() => setJobResultsPreviewStates({ ...jobResultsPreviewStates, [job.id]: false }));
+    };
+
+    const onJobDeleteClick = async (job: IBenchmarkJob) => {
+        setJobDeleteStates({ ...jobDeleteStates, [job.id]: true });
+        httpDelete(keycloak, `${EDGE_BENCHMARK_JOBS_PATH}/${job.id}`)
+            .then(onDelete)
+            .catch((error) => console.error(error))
+            .finally(() => setJobDeleteStates({ ...jobDeleteStates, [job.id]: false }));
+    };
+
+    const onJobResultsPreviewModalClose = () => {
+        setJobResultsPreviewModalOpen(false);
     };
 
     const columns: any[] = [
@@ -75,7 +109,7 @@ const JobList = ({ jobs }: { jobs: IBenchmarkJob[] }) => {
         },
         {
             field: 'cpu_only',
-            headerName: 'Accel.',
+            headerName: 'Ran on',
             width: 75,
             renderCell: (params: any) => {
                 return params.value ? 'CPU' : 'GPU';
@@ -107,30 +141,31 @@ const JobList = ({ jobs }: { jobs: IBenchmarkJob[] }) => {
         {
             field: 'actions',
             headerName: 'Actions',
-            width: 150,
+            width: 220,
             renderCell: (params: any) => {
                 const job = params.row;
                 const job_id = job.id;
                 return (
                     <>
-                        <Tooltip title="Open in MinIO">
+                        <Tooltip title="Preview results">
                             <span>
-                                <Button
-                                    color="primary"
+                                <LoadingButton
+                                    color="info"
+                                    loading={jobResultsPreviewStates[job_id]}
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        onJobResultsOpenClick(job);
+                                        onJobResultsPreviewClick(job);
                                     }}
                                 >
-                                    <OpenInNewIcon />
-                                </Button>
+                                    <VisibilityIcon />
+                                </LoadingButton>
                             </span>
                         </Tooltip>
                         <Tooltip title="Download results">
                             <span>
                                 <LoadingButton
                                     color="primary"
-                                    loading={jobResultsLoadingStates[job_id]}
+                                    loading={jobResultsDownloadStates[job_id]}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onJobResultsDownloadClick(job);
@@ -140,13 +175,38 @@ const JobList = ({ jobs }: { jobs: IBenchmarkJob[] }) => {
                                 </LoadingButton>
                             </span>
                         </Tooltip>
+                        <Tooltip title="Delete job">
+                            <span>
+                                <LoadingButton
+                                    color="error"
+                                    loading={jobDeleteStates[job_id]}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onJobDeleteClick(job);
+                                    }}
+                                >
+                                    <DeleteIcon />
+                                </LoadingButton>
+                            </span>
+                        </Tooltip>
                     </>
                 );
             },
         },
     ];
 
-    return <DataGrid rows={jobs} columns={columns} getRowId={(job: IBenchmarkJob) => job.id} />;
+    return (
+        <>
+            <DataGrid rows={jobs} columns={columns} getRowId={(job: IBenchmarkJob) => job.id} />
+            {jobResultsPreviewModalOpen && selectedBenchmarkJobResult && selectedBenchmarkJob ? (
+                <JobResultsPreviewModal
+                    onClose={onJobResultsPreviewModalClose}
+                    benchmarkJob={selectedBenchmarkJob}
+                    benchmarkJobResult={selectedBenchmarkJobResult}
+                />
+            ) : null}
+        </>
+    );
 };
 
 export default JobList;

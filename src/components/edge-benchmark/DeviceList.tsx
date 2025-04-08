@@ -113,10 +113,12 @@ const DeviceList = ({
         httpGet(keycloak, `${EDGE_BENCHMARK_DEVICE_PATH}/${hostname}/info`)
             .then((deviceInfo) => {
                 setSelectedDeviceInfo(deviceInfo);
-                setDeviceInfoLoadingStates({ ...deviceInfoLoadingStates, [hostname]: false });
                 setDeviceInfoModalOpen(true);
             })
-            .catch((error) => console.error('Error fetching device info:', error));
+            .catch((error) => console.error('Error fetching device info:', error))
+            .finally(() => {
+                setDeviceInfoLoadingStates({ ...deviceInfoLoadingStates, [hostname]: false });
+            });
     };
 
     return (

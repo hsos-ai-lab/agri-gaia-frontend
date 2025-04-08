@@ -478,6 +478,9 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                                     multiple={false}
                                     onChange={onModelConfigurationFileSelectChange}
                                 />
+                                <FormHelperText>
+                                    Optional but recommended *.pbtxt config for ONNX models.
+                                </FormHelperText>
                             </Grid>
                         </>
                     ) : null}

@@ -27,13 +27,8 @@ const EdgeBenchmarkJobs = () => {
 
     const fetchBenchmarkJobs = async () => {
         httpGet(keycloak, EDGE_BENCHMARK_JOBS_PATH)
-            .then((_benchmarkJobs: IBenchmarkJob[]) => {
-                setBenchmarkJobs(_benchmarkJobs);
-                console.log(_benchmarkJobs);
-            })
-            .catch((error) => {
-                console.error('Failed to fetch benchmark jobs', error);
-            });
+            .then((_benchmarkJobs: IBenchmarkJob[]) => setBenchmarkJobs(_benchmarkJobs))
+            .catch((error) => console.error('Failed to fetch benchmark jobs', error));
     };
 
     return (
@@ -45,10 +40,10 @@ const EdgeBenchmarkJobs = () => {
                     </Typography>
                 </Grid>
                 <Grid item xs={12}>
-                    <Typography>Download and compare historic benchmark results listed below.</Typography>
+                    <Typography>Download and compare the results of historic benchmark jobs listed below.</Typography>
                 </Grid>
             </Grid>
-            <JobList jobs={benchmarkJobs} />
+            <JobList onDelete={fetchBenchmarkJobs} jobs={benchmarkJobs} />
         </>
     );
 };

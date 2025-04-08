@@ -9,6 +9,9 @@
 //
 // SPDX-License-Identifier: MIT
 
+import IDataset from '../IDataset';
+import IModel from '../IModel';
+
 export enum InferenceClient {
     TritonDenseNetClient = 'TritonDenseNetClient',
     TritonYoloClient = 'TritonYoloClient',
@@ -22,8 +25,8 @@ export default interface BenchmarkJob {
     timestamp: string;
     last_modified: string;
 
-    dataset_id: number;
-    model_id: number;
+    dataset: IDataset;
+    model: IModel;
     cpu_only: boolean;
     edge_device: string;
     inference_client: InferenceClient;
