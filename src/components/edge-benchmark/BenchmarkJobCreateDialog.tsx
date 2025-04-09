@@ -276,7 +276,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
         return true;
     };
 
-    const createEdgeBenchmarkStartPayload = (edgeDevice: IEdgeDevice) => {
+    const createEdgeBenchmarkStartPayload = (edgeDevice: IEdgeDevice, createdAt: string) => {
         const config = benchmarkConfig.values;
 
         let inferenceClient: IInferenceClient = {
@@ -326,6 +326,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
         };
 
         return {
+            created_at: createdAt,
             dataset_id: selectedDataset,
             model_id: selectedModel,
             chunk_size: Number(uploadChunkSize),
@@ -376,6 +377,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
         if (!validateFormInputs()) return;
 
         setIsCreating(true);
+        const createdAt = new Date().toISOString();
         for (const selectedDeviceHeader of selectedDeviceHeaders) {
             // TODO: Send full connection information as part of the device header
             const edgeDevice: IEdgeDevice = {
@@ -383,7 +385,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
                 host: selectedDeviceHeader.hostname,
                 port: 80,
             };
-            const edgeBenchmarkStartPayload = createEdgeBenchmarkStartPayload(edgeDevice);
+            const edgeBenchmarkStartPayload = createEdgeBenchmarkStartPayload(edgeDevice, createdAt);
 
             const formData = new FormData();
             formData.append('payload', JSON.stringify(edgeBenchmarkStartPayload));
