@@ -128,10 +128,9 @@ const DeviceList = ({
                 columns={columns}
                 getRowId={(deviceHeader: IDeviceHeader) => deviceHeader.ip}
                 checkboxSelection
-                onRowSelectionModelChange={(ips: GridRowSelectionModel) => {
-                    const selectedDeviceHeaders = deviceHeaders.filter((deviceHeader) => ips.includes(deviceHeader.ip));
-                    onDeviceSelectionChange(selectedDeviceHeaders);
-                }}
+                onRowSelectionModelChange={(ips: GridRowSelectionModel) =>
+                    onDeviceSelectionChange(deviceHeaders.filter((deviceHeader) => ips.includes(deviceHeader.ip)))
+                }
             />
             {deviceInfoModalOpen && selectedDeviceHeader && selectedDeviceInfo ? (
                 <BenchmarkDeviceDetailsModal

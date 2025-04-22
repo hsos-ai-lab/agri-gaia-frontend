@@ -10,7 +10,7 @@
 // SPDX-License-Identifier: MIT
 
 import { useState } from 'react';
-import { DataGrid } from '@mui/x-data-grid';
+import { DataGrid, GridRowSelectionModel } from '@mui/x-data-grid';
 import DownloadIcon from '@mui/icons-material/Download';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -23,7 +23,15 @@ import { EDGE_BENCHMARK_JOBS_PATH, EDGE_BENCHMARK_RESULTS_PATH } from '../../end
 import { downloadBlob } from '../../util';
 import JobResultsPreviewModal from './JobResultsPreviewModal';
 
-const JobList = ({ jobs, onDelete }: { jobs: IBenchmarkJob[]; onDelete: () => void }) => {
+const JobList = ({
+    jobs,
+    onDelete,
+    onJobSelectionChange,
+}: {
+    jobs: IBenchmarkJob[];
+    onDelete: () => void;
+    onJobSelectionChange: (selectedJobs: IBenchmarkJob[]) => void;
+}) => {
     const keycloak = useKeycloak();
     document.documentElement.setAttribute('data-color-mode', 'light');
 
@@ -197,7 +205,15 @@ const JobList = ({ jobs, onDelete }: { jobs: IBenchmarkJob[]; onDelete: () => vo
 
     return (
         <>
-            <DataGrid rows={jobs} columns={columns} getRowId={(job: IBenchmarkJob) => job.id} />
+            <DataGrid
+                rows={jobs}
+                columns={columns}
+                getRowId={(job: IBenchmarkJob) => job.id}
+                checkboxSelection
+                onRowSelectionModelChange={(jobIds: GridRowSelectionModel) =>
+                    onJobSelectionChange(jobs.filter((job) => jobIds.includes(job.id)))
+                }
+            />
             {jobResultsPreviewModalOpen && selectedBenchmarkJobResult && selectedBenchmarkJob ? (
                 <JobResultsPreviewModal
                     onClose={onJobResultsPreviewModalClose}

@@ -13,9 +13,7 @@ import { useEffect, useState } from 'react';
 import Fab from '@mui/material/Fab';
 import { Grid, Typography } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
-import IAlertMessage from '../types/IAlertMessage';
 import useKeycloak from '../contexts/KeycloakContext';
-import AlertSnackbar from '../components/common/AlertSnackbar';
 import DeviceList from '../components/edge-benchmark/DeviceList';
 import IDeviceHeader from '../types/edge-benchmark/IDeviceHeader';
 import { EDGE_BENCHMARK_DEVICE_HEADER_PATH } from '../endpoints';
@@ -28,12 +26,6 @@ const EdgeBenchmark = () => {
     const [deviceHeaders, setDeviceHeaders] = useState<IDeviceHeader[]>([]);
     const [selectedDeviceHeaders, setSelectedDeviceHeaders] = useState<IDeviceHeader[]>([]);
     const [benchmarkJobConfigModalOpen, setBenchmarkJobConfigModalOpen] = useState(false);
-
-    const [snackbarMessage, setSnackbarMessage] = useState<IAlertMessage>({
-        message: undefined,
-        severity: undefined,
-        open: false,
-    });
 
     useEffect(() => {
         fetchDeviceHeaders();
@@ -53,10 +45,6 @@ const EdgeBenchmark = () => {
 
     const onDeviceSelectionChange = (selectedDeviceHeaders: IDeviceHeader[]) => {
         setSelectedDeviceHeaders(selectedDeviceHeaders);
-    };
-
-    const onBenchmarkJobCreate = (benchmarkJobCreateMessage: IAlertMessage) => {
-        setSnackbarMessage(benchmarkJobCreateMessage);
     };
 
     const onBenchmarkJobCreateDialogClose = () => {
@@ -95,17 +83,10 @@ const EdgeBenchmark = () => {
             <DeviceList deviceHeaders={deviceHeaders} onDeviceSelectionChange={onDeviceSelectionChange} />
             {benchmarkJobConfigModalOpen && selectedDeviceHeaders.length ? (
                 <BenchmarkJobCreateDialog
-                    onCreate={onBenchmarkJobCreate}
                     onClose={onBenchmarkJobCreateDialogClose}
                     selectedDeviceHeaders={selectedDeviceHeaders}
                 />
             ) : null}
-            <AlertSnackbar
-                message={snackbarMessage.message}
-                severity={snackbarMessage.severity}
-                open={snackbarMessage.open}
-                onClose={() => setSnackbarMessage({ ...snackbarMessage, open: false })}
-            />
         </>
     );
 };

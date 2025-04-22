@@ -10,16 +10,26 @@
 // SPDX-License-Identifier: MIT
 
 import { useEffect, useState } from 'react';
+import Fab from '@mui/material/Fab';
+import DownloadIcon from '@mui/icons-material/Download';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CompareIcon from '@mui/icons-material/Compare';
 import { Grid, Typography } from '@mui/material';
 import useKeycloak from '../contexts/KeycloakContext';
-import { EDGE_BENCHMARK_JOBS_PATH } from '../endpoints';
+import { EDGE_BENCHMARK_JOBS_PATH, EDGE_BENCHMARK_RESULTS_PATH } from '../endpoints';
 import JobList from '../components/edge-benchmark/JobList';
 import IBenchmarkJob from '../types/edge-benchmark/IBenchmarkJob';
-import { httpGet } from '../api';
+import { httpGet, httpPost, httpDelete } from '../api';
+import Tooltip from '@mui/material/Tooltip';
+import CircularProgress from '@mui/material/CircularProgress';
+import { downloadBlob } from '../util';
 
 const EdgeBenchmarkJobs = () => {
     const keycloak = useKeycloak();
     const [benchmarkJobs, setBenchmarkJobs] = useState<IBenchmarkJob[]>([]);
+    const [selectedBenchmarkJobs, setSelectedBenchmarkJobs] = useState<IBenchmarkJob[]>([]);
+    const [areBenchmarkJobsDeleting, setAreBenchmarkJobsDeleting] = useState(false);
+    const [areBenchmarkResultsDownloading, setAreBenchmarkResultsDownloading] = useState(false);
 
     useEffect(() => {
         fetchBenchmarkJobs();
@@ -31,19 +41,95 @@ const EdgeBenchmarkJobs = () => {
             .catch((error) => console.error('Failed to fetch benchmark jobs', error));
     };
 
+    const onJobSelectionChange = (selectedJobs: IBenchmarkJob[]) => {
+        setSelectedBenchmarkJobs(selectedJobs);
+    };
+
+    const onBenchmarkJobsDownloadIconClick = () => {
+        setAreBenchmarkResultsDownloading(true);
+        const job_ids = selectedBenchmarkJobs.map((job) => job.id);
+        httpPost(keycloak, `${EDGE_BENCHMARK_RESULTS_PATH}/download`, job_ids)
+            .then(({ blob, fileName }) => downloadBlob(blob, fileName))
+            .catch((error) => console.error(error))
+            .finally(() => setAreBenchmarkResultsDownloading(false));
+    };
+
+    const onBenchmarkJobsDeleteIconClick = () => {
+        setAreBenchmarkJobsDeleting(true);
+
+        const deletePromises = [];
+        for (const job of selectedBenchmarkJobs) {
+            const deletePromise = httpDelete(keycloak, `${EDGE_BENCHMARK_JOBS_PATH}/${job.id}`);
+            deletePromises.push(deletePromise);
+        }
+
+        Promise.all(deletePromises)
+            .then(fetchBenchmarkJobs)
+            .catch((error) => console.error(error))
+            .finally(() => setAreBenchmarkJobsDeleting(false));
+    };
+
+    const onBenchmarkJobsCompareIconClick = () => {
+        // TODO: Implement
+        console.log('compare');
+    };
+
     return (
         <>
             <Grid container justifyContent="space-between" sx={{ mb: 2 }}>
-                <Grid item xs={12}>
+                <Grid item xs={6}>
                     <Typography variant="h4" component="h4">
                         Edge Benchmark Jobs
                     </Typography>
                 </Grid>
+                {selectedBenchmarkJobs.length >= 2 ? (
+                    <Grid item xs={6}>
+                        <Fab
+                            color="error"
+                            aria-label="delete"
+                            size="small"
+                            sx={{ float: 'right', mr: 2 }}
+                            onClick={onBenchmarkJobsDeleteIconClick}
+                            disabled={areBenchmarkJobsDeleting}
+                        >
+                            <Tooltip title="Delete selected">
+                                {areBenchmarkJobsDeleting ? <CircularProgress color="error" /> : <DeleteIcon />}
+                            </Tooltip>
+                        </Fab>
+                        <Fab
+                            color="primary"
+                            aria-label="download"
+                            size="small"
+                            sx={{ float: 'right', mr: 2 }}
+                            onClick={onBenchmarkJobsDownloadIconClick}
+                            disabled={areBenchmarkResultsDownloading}
+                        >
+                            <Tooltip title="Download selected">
+                                {areBenchmarkResultsDownloading ? (
+                                    <CircularProgress color="primary" />
+                                ) : (
+                                    <DownloadIcon />
+                                )}
+                            </Tooltip>
+                        </Fab>
+                        <Fab
+                            color="info"
+                            aria-label="compare"
+                            size="small"
+                            sx={{ float: 'right', mr: 2 }}
+                            onClick={onBenchmarkJobsCompareIconClick}
+                        >
+                            <Tooltip title="Compare selected">
+                                <CompareIcon />
+                            </Tooltip>
+                        </Fab>
+                    </Grid>
+                ) : null}
                 <Grid item xs={12}>
                     <Typography>Download and compare the results of historic benchmark jobs listed below.</Typography>
                 </Grid>
             </Grid>
-            <JobList onDelete={fetchBenchmarkJobs} jobs={benchmarkJobs} />
+            <JobList onDelete={fetchBenchmarkJobs} onJobSelectionChange={onJobSelectionChange} jobs={benchmarkJobs} />
         </>
     );
 };

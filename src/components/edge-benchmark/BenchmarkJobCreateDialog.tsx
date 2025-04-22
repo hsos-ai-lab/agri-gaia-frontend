@@ -42,11 +42,10 @@ import { httpGet, httpUpload } from '../../api';
 
 interface IBenchmarkJobCreateProps {
     selectedDeviceHeaders: IDeviceHeader[];
-    onCreate: (jobCreateMessage: IAlertMessage) => void;
     onClose: () => void;
 }
 
-export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmarkJobCreateProps) {
+export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreateProps) {
     const keycloak = useKeycloak();
     const tasks = useApplicationTasks();
 
@@ -334,33 +333,13 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
         };
     };
 
-    const startBenchmarkJob = async (formData: FormData, edgeDevice: IEdgeDevice) => {
-        httpUpload(keycloak, `${EDGE_BENCHMARK_START_PATH}`, formData, undefined, true)
+    const startBenchmarkJob = (formData: FormData, edgeDevice: IEdgeDevice) => {
+        setErrorMsg(undefined);
+        return httpUpload(keycloak, `${EDGE_BENCHMARK_START_PATH}`, formData, undefined, true)
             .then(({ headers }) => {
                 httpGet(keycloak, headers.get('Location'))
-                    .then((task) => {
-                        onCreate({
-                            message: `Started Benchmark Job on device ${edgeDevice.host}.`,
-                            severity: 'info',
-                            open: true,
-                        });
-                        tasks?.addServerBackgroundTask(keycloak, tasks, task, () => {
-                            onCreate({
-                                message: `Benchmark Job on device ${edgeDevice.host} finished successfully.`,
-                                severity: 'success',
-                                open: true,
-                            });
-                        });
-                    })
-                    .catch((error) => {
-                        onCreate({
-                            message: `Benchmark Job on device ${edgeDevice.host} has failed.`,
-                            severity: 'error',
-                            open: true,
-                        });
-                        console.error(error);
-                    });
-                setErrorMsg(undefined);
+                    .then((task) => tasks?.addServerBackgroundTask(keycloak, tasks, task))
+                    .catch((error) => console.error(error));
             })
             .catch((error) => {
                 console.error(error);
@@ -377,6 +356,7 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
         if (!validateFormInputs()) return;
 
         setIsCreating(true);
+        const startPromises = [];
         const createdAt = new Date().toISOString();
         for (const selectedDeviceHeader of selectedDeviceHeaders) {
             // TODO: Send full connection information as part of the device header
@@ -391,11 +371,14 @@ export default function ({ selectedDeviceHeaders, onCreate, onClose }: IBenchmar
             formData.append('payload', JSON.stringify(edgeBenchmarkStartPayload));
             if (modelConfiguration) formData.append('model_metadata', modelConfiguration, modelConfiguration.name);
 
-            startBenchmarkJob(formData, edgeDevice);
-            await sleep(5000);
+            const startPromise = startBenchmarkJob(formData, edgeDevice);
+            startPromises.push(startPromise);
         }
-        setIsCreating(false);
-        onClose();
+
+        Promise.all(startPromises)
+            .then(onClose)
+            .catch((error) => console.error(error))
+            .finally(() => setIsCreating(false));
     };
 
     const onDatasetSelectChange = (event: SelectChangeEvent) => {
