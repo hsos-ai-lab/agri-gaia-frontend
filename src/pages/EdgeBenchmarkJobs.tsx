@@ -23,13 +23,17 @@ import { httpGet, httpPost, httpDelete } from '../api';
 import Tooltip from '@mui/material/Tooltip';
 import CircularProgress from '@mui/material/CircularProgress';
 import { downloadBlob } from '../util';
+import JobCompareModal from '../components/edge-benchmark/JobCompareModal';
 
 const EdgeBenchmarkJobs = () => {
     const keycloak = useKeycloak();
     const [benchmarkJobs, setBenchmarkJobs] = useState<IBenchmarkJob[]>([]);
     const [selectedBenchmarkJobs, setSelectedBenchmarkJobs] = useState<IBenchmarkJob[]>([]);
+    const [selectedBenchmarkJobResults, setSelectedBenchmarkJobResults] = useState<Record<string, any>[]>([]);
     const [areBenchmarkJobsDeleting, setAreBenchmarkJobsDeleting] = useState(false);
     const [areBenchmarkResultsDownloading, setAreBenchmarkResultsDownloading] = useState(false);
+    const [isBenchmarkJobComparisonLoading, setIsBenchmarkJobComparisonLoading] = useState(false);
+    const [jobCompareModalOpen, setJobCompareModalOpen] = useState(false);
 
     useEffect(() => {
         fetchBenchmarkJobs();
@@ -70,8 +74,25 @@ const EdgeBenchmarkJobs = () => {
     };
 
     const onBenchmarkJobsCompareIconClick = () => {
-        // TODO: Implement
-        console.log('compare');
+        setIsBenchmarkJobComparisonLoading(true);
+
+        const resultPromises = [];
+        for (const job of selectedBenchmarkJobs) {
+            const resultPromise = httpGet(keycloak, `${EDGE_BENCHMARK_RESULTS_PATH}/${job.id}`);
+            resultPromises.push(resultPromise);
+        }
+
+        Promise.all(resultPromises)
+            .then((results) => {
+                setSelectedBenchmarkJobResults(results);
+                setJobCompareModalOpen(true);
+            })
+            .catch((error) => console.error(error))
+            .finally(() => setIsBenchmarkJobComparisonLoading(false));
+    };
+
+    const onJobCompareModalClose = () => {
+        setJobCompareModalOpen(false);
     };
 
     return (
@@ -118,9 +139,14 @@ const EdgeBenchmarkJobs = () => {
                             size="small"
                             sx={{ float: 'right', mr: 2 }}
                             onClick={onBenchmarkJobsCompareIconClick}
+                            disabled={isBenchmarkJobComparisonLoading}
                         >
                             <Tooltip title="Compare selected">
-                                <CompareIcon />
+                                {isBenchmarkJobComparisonLoading ? (
+                                    <CircularProgress color="primary" />
+                                ) : (
+                                    <CompareIcon />
+                                )}
                             </Tooltip>
                         </Fab>
                     </Grid>
@@ -130,6 +156,16 @@ const EdgeBenchmarkJobs = () => {
                 </Grid>
             </Grid>
             <JobList onDelete={fetchBenchmarkJobs} onJobSelectionChange={onJobSelectionChange} jobs={benchmarkJobs} />
+            {jobCompareModalOpen &&
+            selectedBenchmarkJobs.length >= 2 &&
+            selectedBenchmarkJobResults.length >= 2 &&
+            selectedBenchmarkJobs.length === selectedBenchmarkJobResults.length ? (
+                <JobCompareModal
+                    benchmarkJobs={selectedBenchmarkJobs}
+                    benchmarkJobResults={selectedBenchmarkJobResults}
+                    onClose={onJobCompareModalClose}
+                />
+            ) : null}
         </>
     );
 };

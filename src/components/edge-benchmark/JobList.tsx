@@ -77,6 +77,7 @@ const JobList = ({
     };
 
     const columns: any[] = [
+        { field: 'id', headerName: 'ID', width: 2 },
         { field: 'edge_device', headerName: 'Device identifier', flex: 1 },
         {
             field: 'dataset',
