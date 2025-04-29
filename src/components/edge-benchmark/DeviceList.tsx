@@ -17,6 +17,7 @@ import { GridRowSelectionModel } from '@mui/x-data-grid';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import IDeviceHeader from '../../types/edge-benchmark/IDeviceHeader';
 import Tooltip from '@mui/material/Tooltip';
+import Button from '@mui/material/Button';
 import LoadingButton from '@mui/lab/LoadingButton';
 import BenchmarkDeviceDetailsModal from '../../components/edge-benchmark/BenchmarkDeviceDetailsModal';
 import { EDGE_BENCHMARK_DEVICE_PATH } from '../../endpoints';
@@ -72,7 +73,11 @@ const DeviceList = ({
             headerName: 'Online',
             width: 100,
             renderCell: (params: any) => {
-                return params.value ? <CheckCircleIcon color="primary" /> : <CancelIcon style={{ color: 'red' }} />;
+                return (
+                    <Button disabled variant="text">
+                        {params.value ? <CheckCircleIcon color="primary" /> : <CancelIcon color="error" />}
+                    </Button>
+                );
             },
         },
         {
