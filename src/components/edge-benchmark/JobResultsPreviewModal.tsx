@@ -29,6 +29,8 @@ export default function ({
     benchmarkJobResult: Record<string, any>;
     onClose: () => void;
 }) {
+    const CHARTJS_LINE_TENSION = 0.3;
+
     const isNumber = (value: any) => {
         return typeof value === 'number' && !isNaN(value);
     };
@@ -47,7 +49,9 @@ export default function ({
     };
 
     const getSeries = (name: string): any[] => {
-        return postprocess(getBenchmarkResults()[name]);
+        const results = getBenchmarkResults();
+        if (name in results) return postprocess(results[name]);
+        return [];
     };
 
     const meanX = (series: number[], ignoreNegative: boolean): number => {
@@ -124,9 +128,13 @@ export default function ({
                                                 label: key,
                                                 data: getSeries(key),
                                             })),
-                                    ].filter((dataset) =>
-                                        dataset.data.reduce((acc: number, curr: number) => acc + curr, 0),
-                                    ),
+                                    ]
+                                        .filter((dataset) =>
+                                            dataset.data.reduce((acc: number, curr: number) => acc + curr, 0),
+                                        )
+                                        .map((dataset) => {
+                                            return { ...dataset, tension: CHARTJS_LINE_TENSION };
+                                        }),
                                 }}
                                 options={{
                                     responsive: true,
@@ -169,7 +177,10 @@ export default function ({
                                             label: key,
                                             data: getSeries(key),
                                         }))
-                                        .filter((dataset) => dataset.data.reduce((acc, curr) => acc + curr, 0)),
+                                        .filter((dataset) => dataset.data.reduce((acc, curr) => acc + curr, 0))
+                                        .map((dataset) => {
+                                            return { ...dataset, tension: CHARTJS_LINE_TENSION };
+                                        }),
                                 }}
                                 options={{
                                     responsive: true,
@@ -212,7 +223,10 @@ export default function ({
                                             label: key,
                                             data: getSeries(key).map((value) => value / 1000),
                                         }))
-                                        .filter((dataset) => dataset.data.reduce((acc, curr) => acc + curr, 0)),
+                                        .filter((dataset) => dataset.data.reduce((acc, curr) => acc + curr, 0))
+                                        .map((dataset) => {
+                                            return { ...dataset, tension: CHARTJS_LINE_TENSION };
+                                        }),
                                 }}
                                 options={{
                                     responsive: true,
