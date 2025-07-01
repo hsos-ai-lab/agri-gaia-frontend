@@ -14,6 +14,7 @@ import { Line } from 'react-chartjs-2';
 import Grid from '@mui/material/Grid';
 import Dialog from '@mui/material/Dialog';
 import Button from '@mui/material/Button';
+import { Typography } from '@mui/material';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -81,8 +82,8 @@ export default function ({
         <>
             <Dialog open onClose={onClose} fullWidth maxWidth="xl">
                 <DialogTitle>
-                    Benchmark results for model {benchmarkJob.model.name} with dataset {benchmarkJob.dataset.name} on
-                    device {benchmarkJob.edge_device}
+                    Job #{benchmarkJob.id} — Model "{benchmarkJob.model.name}" with dataset "{benchmarkJob.dataset.name}
+                    " on device "{benchmarkJob.edge_device}"
                 </DialogTitle>
                 <DialogContent>
                     <Grid container justifyContent="space-between">

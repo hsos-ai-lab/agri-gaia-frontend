@@ -24,6 +24,9 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import JobResultsPreviewModal from './JobResultsPreviewModal';
+import Tooltip from '@mui/material/Tooltip';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 export default function ({
     benchmarkJobs,
@@ -36,6 +39,10 @@ export default function ({
 }) {
     const [comparisonBasis, setComparisonBasis] = useState<string>();
     const [comparisonRows, setComparisonRows] = useState<Record<string, any>>();
+
+    const [jobResultsPreviewModalOpen, setJobResultsPreviewModalOpen] = useState(false);
+    const [selectedBenchmarkJobResult, setSelectedBenchmarkJobResult] = useState<Record<string, any>>();
+    const [selectedBenchmarkJob, setSelectedBenchmarkJob] = useState<IBenchmarkJob>();
 
     useEffect(() => {
         createComparisonRows();
@@ -54,9 +61,26 @@ export default function ({
         return (Math.round(num * factor) / factor).toFixed(prec);
     };
 
+    const onJobResultsPreviewClick = (job: IBenchmarkJob, results: Record<string, any>) => {
+        delete results.benchmark_job.inference_results.results;
+        setSelectedBenchmarkJob(job);
+        setSelectedBenchmarkJobResult(results);
+        setJobResultsPreviewModalOpen(true);
+    };
+
+    const onJobResultsPreviewModalClose = () => {
+        setJobResultsPreviewModalOpen(false);
+    };
+
     const createComparisonRows = () => {
         const rows: Record<string, any> = {
             'Comparison basis': {
+                vals: [],
+                render: (val: any) => {
+                    return val;
+                },
+            },
+            'Resource utilization': {
                 vals: [],
                 render: (val: any) => {
                     return val;
@@ -205,7 +229,8 @@ export default function ({
         };
 
         benchmarkJobs.forEach((job, index) => {
-            const performance = benchmarkJobResults[index].benchmark_job.inference_results.performance;
+            const benchmarkJobResult = benchmarkJobResults[index];
+            const performance = benchmarkJobResult.benchmark_job.inference_results.performance;
             for (const [name, value] of Object.entries({
                 'Comparison basis': (
                     <Radio
@@ -215,6 +240,20 @@ export default function ({
                         name="comparison-basis"
                         color="primary"
                     />
+                ),
+                'Resource utilization': (
+                    <Tooltip title="Show resource utilization">
+                        <span>
+                            <Button
+                                color="info"
+                                onClick={() => {
+                                    onJobResultsPreviewClick(job, benchmarkJobResult);
+                                }}
+                            >
+                                <VisibilityIcon />
+                            </Button>
+                        </span>
+                    </Tooltip>
                 ),
                 'Device identifier': job.edge_device,
                 Dataset: job.dataset.name,
@@ -272,7 +311,7 @@ export default function ({
                                                                   benchmarkJobs.findIndex(
                                                                       (job) => String(job.id) === comparisonBasis,
                                                                   ) && name !== 'Comparison basis'
-                                                                  ? 'lightblue'
+                                                                  ? 'lightyellow'
                                                                   : comparisonBasis === undefined ||
                                                                     !('compare' in comparisonRows[name])
                                                                   ? null
@@ -309,6 +348,13 @@ export default function ({
                             </TableBody>
                         </Table>
                     </TableContainer>
+                    {jobResultsPreviewModalOpen && selectedBenchmarkJobResult && selectedBenchmarkJob ? (
+                        <JobResultsPreviewModal
+                            onClose={onJobResultsPreviewModalClose}
+                            benchmarkJob={selectedBenchmarkJob}
+                            benchmarkJobResult={selectedBenchmarkJobResult}
+                        />
+                    ) : null}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={onClose}>Close</Button>
