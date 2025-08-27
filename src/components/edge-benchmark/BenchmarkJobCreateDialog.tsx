@@ -19,6 +19,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import StartIcon from '@mui/icons-material/Start';
+import CameraIcon from '@mui/icons-material/Camera';
 import LoadingButton from '@mui/lab/LoadingButton';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -30,15 +31,18 @@ import { TextField, Typography } from '@mui/material';
 import Form from '@rjsf/material-ui/v5';
 import IDataset from '../../types/IDataset';
 import IModel from '../../types/IModel';
+import ISensorInfo from '../../types/ISensorInfo';
+import IAlertMessage from '../../types/IAlertMessage';
 import useKeycloak from '../../contexts/KeycloakContext';
 import IDeviceHeader from '../../types/edge-benchmark/IDeviceHeader';
 import IEdgeDevice from '../../types/edge-benchmark/IEdgeDevice';
 import FileInput from '../common/FileInput';
 import useApplicationTasks from '../../contexts/TasksContext';
 import IBenchmarkConfig from '../../types/edge-benchmark/IBenchmarkConfig';
+import AlertSnackbar from '../../components/common/AlertSnackbar';
 import { IInferenceClient } from '../../types/edge-benchmark/IInferenceClients';
-import { DATASETS_PATH, MODELS_PATH, EDGE_BENCHMARK_FORM_PATH, EDGE_BENCHMARK_START_PATH } from '../../endpoints';
-import { httpGet, httpUpload } from '../../api';
+import { DATASETS_PATH, MODELS_PATH, EDGE_BENCHMARK_FORM_PATH, EDGE_BENCHMARK_START_PATH, EDGE_BENCHMARK_SENSOR_PATH } from '../../endpoints';
+import { httpGet, httpUpload, httpPost } from '../../api';
 
 interface IBenchmarkJobCreateProps {
     selectedDeviceHeaders: IDeviceHeader[];
@@ -50,14 +54,24 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
     const tasks = useApplicationTasks();
 
     const [benchmarkConfig, setBenchmarkConfig] = useState<Record<string, any> | undefined>(undefined);
+    const [sensorConfig, setSensorConfig] = useState<Record<string, any> | undefined>(undefined);
     const [datasets, setDatasets] = useState<Array<IDataset> | undefined>(undefined);
     const [selectedDataset, setSelectedDataset] = useState<string>('');
     const [models, setModels] = useState<Array<IModel> | undefined>(undefined);
+    const [sensors, setSensors] = useState<Array<ISensorInfo> | undefined>(undefined);
     const [modelConfiguration, setModelConfiguration] = useState<File | undefined>();
     const [uploadChunkSize, setUploadChunksize] = useState<string>('');
     const [selectedModel, setSelectedModel] = useState<string>('');
+    const [selectedSensor, setSelectedSensor] = useState<string>('');
     const [isCreating, setIsCreating] = useState(false);
-    const [errorMsg, setErrorMsg] = useState<string | undefined>(undefined);
+    const [isCapturing, setIsCapturing] = useState(false);
+    const [createErrorMsg, setCreateErrorMsg] = useState<string | undefined>(undefined);
+    const [captureErrorMsg, setCaptureErrorMsg] = useState<string | undefined>(undefined);
+    const [snackbarMessage, setSnackbarMessage] = useState<IAlertMessage>({
+        message: undefined,
+        severity: undefined,
+        open: false,
+    });
 
     const tritonInferenceClients = ['TritonDenseNetClient', 'TritonYoloClient'];
 
@@ -66,7 +80,20 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
             .then((_schema) => setBenchmarkConfig({ schema: _schema, values: {} }))
             .catch((error) => {
                 console.error(error);
-                setErrorMsg(`Fetching job create form: ${error.message}`);
+                setCreateErrorMsg(`Fetching job create form: ${error.message}`);
+            });
+    };
+
+    // TODO: Cleanup
+    const fetchSensorConfigFormSchema = async () =>  {
+        httpGet(keycloak, `${EDGE_BENCHMARK_FORM_PATH}/sensors`)
+            .then((_schema) => {
+                setSensorConfig({ schema: _schema, values: {} });
+                console.log("Sensor configuration schema:", _schema);
+            })
+            .catch((error) => {
+                console.error(error);
+                setCreateErrorMsg(`Fetching sensor configuration form: ${error.message}`);
             });
     };
 
@@ -75,7 +102,7 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
             .then((_datasets) => setDatasets(_datasets))
             .catch((error) => {
                 console.error(error);
-                setErrorMsg(`Fetching datasets: ${error.message}`);
+                setCreateErrorMsg(`Fetching datasets: ${error.message}`);
             });
     };
 
@@ -84,56 +111,71 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
             .then((_models) => setModels(_models))
             .catch((error) => {
                 console.error(error);
-                setErrorMsg(`Fetching models: ${error.message}`);
+                setCreateErrorMsg(`Fetching models: ${error.message}`);
+            });
+    };
+
+    // TODO: Cleanup
+    const fetchSensors = async () => {
+        httpGet(keycloak, EDGE_BENCHMARK_SENSOR_PATH)
+            .then((_sensors) => {
+                setSensors(_sensors);
+                console.log("Sensors:", _sensors);
+            })
+            .catch((error) => {
+                console.error(error);
+                setCreateErrorMsg(`Fetching sensors: ${error.message}`);
             });
     };
 
     useEffect(() => {
         fetchBenchmarkConfigFormSchema();
+        fetchSensorConfigFormSchema();
         fetchDatasets();
         fetchModels();
+        fetchSensors();
     }, [keycloak]);
 
-    const onFormChange = (form: any) => {
+    const onCreateJobFormChange = (form: any) => {
         setBenchmarkConfig({ ...benchmarkConfig, values: form.formData });
     };
 
-    const validateFormInputs = () => {
+    const validateCreateJobFormInputs = () => {
         if (!selectedDeviceHeaders.length) {
-            setErrorMsg('Please select at least one device.');
+            setCreateErrorMsg('Please select at least one device.');
             return false;
         }
 
         if (!selectedDataset) {
-            setErrorMsg('Please select a dataset.');
+            setCreateErrorMsg('Please select a dataset.');
             return false;
         }
 
         if (!selectedModel) {
-            setErrorMsg('Please select a model.');
+            setCreateErrorMsg('Please select a model.');
             return false;
         }
 
         const config = benchmarkConfig?.values;
 
         if (!config.protocol) {
-            setErrorMsg('Please select a protocol for the inference client.');
+            setCreateErrorMsg('Please select a protocol for the inference client.');
             return false;
         }
 
         if (!config.port) {
-            setErrorMsg('Please select a port for the inference client.');
+            setCreateErrorMsg('Please select a port for the inference client.');
             return false;
         }
 
         switch (config.inference_client) {
             case 'TritonYoloClient':
                 if (!config.input_width) {
-                    setErrorMsg('Please provide an input width.');
+                    setCreateErrorMsg('Please provide an input width.');
                     return false;
                 }
                 if (!config.input_height) {
-                    setErrorMsg('Please provide an input height.');
+                    setCreateErrorMsg('Please provide an input height.');
                     return false;
                 }
                 break;
@@ -201,7 +243,7 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
     };
 
     const startBenchmarkJob = (formData: FormData, edgeDevice: IEdgeDevice) => {
-        setErrorMsg(undefined);
+        setCreateErrorMsg(undefined);
         return httpUpload(keycloak, `${EDGE_BENCHMARK_START_PATH}`, formData, undefined, true)
             .then(({ headers }) => {
                 httpGet(keycloak, headers.get('Location'))
@@ -210,15 +252,58 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
             })
             .catch((error) => {
                 console.error(error);
-                setErrorMsg(`Failed to start Benchmark Job: ${error.message}`);
+                setCreateErrorMsg(`Failed to start Benchmark Job: ${error.message}`);
             });
     };
 
-    const onFormSubmit = async (form: any) => {
-        setErrorMsg(undefined);
+    const onSensorConfigFormSubmit = async (form: any) => {
+        setCaptureErrorMsg(undefined);
+        setSensorConfig({ ...sensorConfig, values: form.formData });
+        setIsCapturing(true);
+
+        // TODO: Implement task based endpoint in backend
+        await httpPost(
+            keycloak,
+            `${EDGE_BENCHMARK_SENSOR_PATH}/${selectedSensor}/capture`,
+            sensorConfig?.values,
+            undefined,
+            true,
+        )
+            .then(({ headers }) => {
+                httpGet(keycloak, headers.get('Location'))
+                    .then((task) => {
+                        setSnackbarMessage({
+                            message: `Dataset capture using sensor '${selectedSensor}' has started!`,
+                            severity: 'info',
+                            open: true,
+                        });
+                        tasks?.addServerBackgroundTask(keycloak, tasks, task, () => {
+                            console.log(`Dataset was successfully captured using sensor '${selectedSensor}'.`);
+                            fetchDatasets();
+                        });
+                    })
+                    .catch((error) => {
+                        setCaptureErrorMsg(`Dataset capture: ${error.message}`);
+                        console.log(error);
+                    });
+                setCaptureErrorMsg(undefined);
+            })
+            .catch((error) => {
+                console.log(error);
+            }).finally(() => {
+                setIsCapturing(false);
+            });
+    };
+
+    const onSensorConfigFormChange = async (form: any) => {
+        setSensorConfig({ ... sensorConfig, values: form.formData });
+    };
+
+    const onCreateJobFormSubmit = async (form: any) => {
+        setCreateErrorMsg(undefined);
         setBenchmarkConfig({ ...benchmarkConfig, values: form.formData });
 
-        if (!validateFormInputs()) return;
+        if (!validateCreateJobFormInputs()) return;
 
         setIsCreating(true);
         const startPromises = [];
@@ -246,6 +331,10 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
             .finally(() => setIsCreating(false));
     };
 
+    const onSensorSelectChange = (event: SelectChangeEvent) => {
+        setSelectedSensor(event.target.value);
+    };
+
     const onDatasetSelectChange = (event: SelectChangeEvent) => {
         setSelectedDataset(event.target.value);
     };
@@ -259,12 +348,85 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
     };
 
     return (
+        <>
         <Dialog open onClose={onClose} fullWidth maxWidth="xs">
             <DialogTitle>Create a new benchmark job</DialogTitle>
             <DialogContent>
-                {benchmarkConfig ? (
+                <>
+                {sensors && sensorConfig ? (
                     <Grid container justifyContent="space-between" spacing={2}>
                         <Grid item xs={12}>
+                            <Typography><b>Optional:</b> Capture a new dataset using a sensor first.</Typography>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <FormControl fullWidth>
+                                <InputLabel id="sensor">Sensor</InputLabel>
+                                <Select
+                                    labelId="sensor"
+                                    id="sensor-select"
+                                    value={selectedSensor}
+                                    label="Sensor"
+                                    onChange={onSensorSelectChange}
+                                >
+                                    <MenuItem value=""><em>Please select a sensor to configure...</em></MenuItem>
+                                    {sensors.map((sensor: ISensorInfo) => (
+                                            <MenuItem key={sensor.hostname} value={sensor.hostname}>
+                                                {sensor.hostname}: {sensor.name}
+                                            </MenuItem>
+                                        ))}
+                                </Select>
+                                <FormHelperText>Use this sensor to capture a new benchmark dataset.</FormHelperText>
+                            </FormControl>
+                        </Grid>
+                        {selectedSensor ? (
+                        <Grid item xs={12} mt={-2}>
+                            <Form
+                                schema={sensorConfig.schema}
+                                onChange={(form) => onSensorConfigFormChange(form)}
+                                onSubmit={(form) => onSensorConfigFormSubmit(form)}
+                                formData={sensorConfig.values}
+                                liveOmit={true}
+                                omitExtraData={true}
+                                liveValidate={true}
+                            >
+                                <Grid container justifyContent="center" alignItems="center">
+                                    <Grid item xs={12}>
+                                        {captureErrorMsg ? (
+                                            <Alert severity="error" sx={{ mb: 2 }}>
+                                                {captureErrorMsg}
+                                            </Alert>
+                                        ) : null}
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <Box display="flex" justifyContent="center">
+                                            <LoadingButton
+                                                type="submit"
+                                                variant="contained"
+                                                loading={isCapturing}
+                                                loadingPosition="end"
+                                                endIcon={<CameraIcon />}
+                                            >
+                                                Capture Dataset
+                                            </LoadingButton>
+                                        </Box>
+                                    </Grid>
+                                </Grid>
+                            </Form>
+                        </Grid>
+                        ) : null}
+                        <Grid item xs={12}>
+                            <Divider />
+                        </Grid>
+                    </Grid>
+                ) : (
+                    <Grid item container justifyContent="center">
+                        <CircularProgress color="primary" />
+                    </Grid>
+                )}
+
+                {benchmarkConfig ? (
+                    <Grid container justifyContent="space-between" spacing={2}>
+                        <Grid item xs={12} mt={2}>
                             <Typography>1. Select your dataset and model:</Typography>
                         </Grid>
                         <Grid item xs={12}>
@@ -284,7 +446,7 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
                                             </MenuItem>
                                         ))}
                                 </Select>
-                                <FormHelperText>Dataset to use for model inference.</FormHelperText>
+                                <FormHelperText>Use this dataset for model inference.</FormHelperText>
                             </FormControl>
                         </Grid>
                         <Grid item xs={12}>
@@ -344,8 +506,8 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
                         <Grid item xs={12} mt={-2}>
                             <Form
                                 schema={benchmarkConfig.schema}
-                                onChange={(form) => onFormChange(form)}
-                                onSubmit={(form) => onFormSubmit(form)}
+                                onChange={(form) => onCreateJobFormChange(form)}
+                                onSubmit={(form) => onCreateJobFormSubmit(form)}
                                 formData={benchmarkConfig.values}
                                 liveOmit={true}
                                 omitExtraData={true}
@@ -353,9 +515,9 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
                             >
                                 <Grid container justifyContent="center" alignItems="center">
                                     <Grid item xs={12}>
-                                        {errorMsg ? (
+                                        {createErrorMsg ? (
                                             <Alert severity="error" sx={{ mb: 2 }}>
-                                                {errorMsg}
+                                                {createErrorMsg}
                                             </Alert>
                                         ) : null}
                                     </Grid>
@@ -381,10 +543,18 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
                         <CircularProgress color="primary" />
                     </Grid>
                 )}
+                </>
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Close</Button>
             </DialogActions>
         </Dialog>
+        <AlertSnackbar
+            message={snackbarMessage.message}
+            severity={snackbarMessage.severity}
+            open={snackbarMessage.open}
+            onClose={() => setSnackbarMessage({ ...snackbarMessage, open: false })}
+        />
+        </>
     );
 }
