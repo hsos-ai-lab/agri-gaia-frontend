@@ -41,8 +41,15 @@ import useApplicationTasks from '../../contexts/TasksContext';
 import IBenchmarkConfig from '../../types/edge-benchmark/IBenchmarkConfig';
 import AlertSnackbar from '../../components/common/AlertSnackbar';
 import { IInferenceClient } from '../../types/edge-benchmark/IInferenceClients';
-import { DATASETS_PATH, MODELS_PATH, EDGE_BENCHMARK_FORM_PATH, EDGE_BENCHMARK_START_PATH, EDGE_BENCHMARK_SENSOR_PATH } from '../../endpoints';
+import {
+    DATASETS_PATH,
+    MODELS_PATH,
+    EDGE_BENCHMARK_FORM_PATH,
+    EDGE_BENCHMARK_START_PATH,
+    EDGE_BENCHMARK_SENSOR_PATH,
+} from '../../endpoints';
 import { httpGet, httpUpload, httpPost } from '../../api';
+import { downloadBlob } from '../../util';
 
 interface IBenchmarkJobCreateProps {
     selectedDeviceHeaders: IDeviceHeader[];
@@ -85,11 +92,11 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
     };
 
     // TODO: Cleanup
-    const fetchSensorConfigFormSchema = async () =>  {
+    const fetchSensorConfigFormSchema = async () => {
         httpGet(keycloak, `${EDGE_BENCHMARK_FORM_PATH}/sensors`)
             .then((_schema) => {
                 setSensorConfig({ schema: _schema, values: {} });
-                console.log("Sensor configuration schema:", _schema);
+                console.log('Sensor configuration schema:', _schema);
             })
             .catch((error) => {
                 console.error(error);
@@ -120,7 +127,7 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
         httpGet(keycloak, EDGE_BENCHMARK_SENSOR_PATH)
             .then((_sensors) => {
                 setSensors(_sensors);
-                console.log("Sensors:", _sensors);
+                console.log('Sensors:', _sensors);
             })
             .catch((error) => {
                 console.error(error);
@@ -259,44 +266,24 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
     const onSensorConfigFormSubmit = async (form: any) => {
         setCaptureErrorMsg(undefined);
         setSensorConfig({ ...sensorConfig, values: form.formData });
+        if (!sensorConfig) return;
         setIsCapturing(true);
 
-        // TODO: Implement task based endpoint in backend
-        await httpPost(
-            keycloak,
-            `${EDGE_BENCHMARK_SENSOR_PATH}/${selectedSensor}/capture`,
-            sensorConfig?.values,
-            undefined,
-            true,
-        )
-            .then(({ headers }) => {
-                httpGet(keycloak, headers.get('Location'))
-                    .then((task) => {
-                        setSnackbarMessage({
-                            message: `Dataset capture using sensor '${selectedSensor}' has started!`,
-                            severity: 'info',
-                            open: true,
-                        });
-                        tasks?.addServerBackgroundTask(keycloak, tasks, task, () => {
-                            console.log(`Dataset was successfully captured using sensor '${selectedSensor}'.`);
-                            fetchDatasets();
-                        });
-                    })
-                    .catch((error) => {
-                        setCaptureErrorMsg(`Dataset capture: ${error.message}`);
-                        console.log(error);
-                    });
-                setCaptureErrorMsg(undefined);
-            })
+        const { max_sample_size, ...client_config } = sensorConfig.values;
+        await httpPost(keycloak, `${EDGE_BENCHMARK_SENSOR_PATH}/${selectedSensor}/capture`, {
+            client_config: client_config,
+            max_sample_size,
+        })
+            .then(({ blob, fileName }) => downloadBlob(blob, fileName))
             .catch((error) => {
-                console.log(error);
-            }).finally(() => {
-                setIsCapturing(false);
-            });
+                console.error(error);
+                setCaptureErrorMsg(error.message);
+            })
+            .finally(() => setIsCapturing(false));
     };
 
     const onSensorConfigFormChange = async (form: any) => {
-        setSensorConfig({ ... sensorConfig, values: form.formData });
+        setSensorConfig({ ...sensorConfig, values: form.formData });
     };
 
     const onCreateJobFormSubmit = async (form: any) => {
@@ -349,212 +336,218 @@ export default function ({ selectedDeviceHeaders, onClose }: IBenchmarkJobCreate
 
     return (
         <>
-        <Dialog open onClose={onClose} fullWidth maxWidth="xs">
-            <DialogTitle>Create a new benchmark job</DialogTitle>
-            <DialogContent>
-                <>
-                {sensors && sensorConfig ? (
-                    <Grid container justifyContent="space-between" spacing={2}>
-                        <Grid item xs={12}>
-                            <Typography><b>Optional:</b> Capture a new dataset using a sensor first.</Typography>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <FormControl fullWidth>
-                                <InputLabel id="sensor">Sensor</InputLabel>
-                                <Select
-                                    labelId="sensor"
-                                    id="sensor-select"
-                                    value={selectedSensor}
-                                    label="Sensor"
-                                    onChange={onSensorSelectChange}
-                                >
-                                    <MenuItem value=""><em>Please select a sensor to configure...</em></MenuItem>
-                                    {sensors.map((sensor: ISensorInfo) => (
-                                            <MenuItem key={sensor.hostname} value={sensor.hostname}>
-                                                {sensor.hostname}: {sensor.name}
-                                            </MenuItem>
-                                        ))}
-                                </Select>
-                                <FormHelperText>Use this sensor to capture a new benchmark dataset.</FormHelperText>
-                            </FormControl>
-                        </Grid>
-                        {selectedSensor ? (
-                        <Grid item xs={12} mt={-2}>
-                            <Form
-                                schema={sensorConfig.schema}
-                                onChange={(form) => onSensorConfigFormChange(form)}
-                                onSubmit={(form) => onSensorConfigFormSubmit(form)}
-                                formData={sensorConfig.values}
-                                liveOmit={true}
-                                omitExtraData={true}
-                                liveValidate={true}
-                            >
-                                <Grid container justifyContent="center" alignItems="center">
-                                    <Grid item xs={12}>
-                                        {captureErrorMsg ? (
-                                            <Alert severity="error" sx={{ mb: 2 }}>
-                                                {captureErrorMsg}
-                                            </Alert>
-                                        ) : null}
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <Box display="flex" justifyContent="center">
-                                            <LoadingButton
-                                                type="submit"
-                                                variant="contained"
-                                                loading={isCapturing}
-                                                loadingPosition="end"
-                                                endIcon={<CameraIcon />}
-                                            >
-                                                Capture Dataset
-                                            </LoadingButton>
-                                        </Box>
-                                    </Grid>
-                                </Grid>
-                            </Form>
-                        </Grid>
-                        ) : null}
-                        <Grid item xs={12}>
-                            <Divider />
-                        </Grid>
-                    </Grid>
-                ) : (
-                    <Grid item container justifyContent="center">
-                        <CircularProgress color="primary" />
-                    </Grid>
-                )}
-
-                {benchmarkConfig ? (
-                    <Grid container justifyContent="space-between" spacing={2}>
-                        <Grid item xs={12} mt={2}>
-                            <Typography>1. Select your dataset and model:</Typography>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <FormControl fullWidth>
-                                <InputLabel id="dataset">Dataset *</InputLabel>
-                                <Select
-                                    labelId="dataset"
-                                    id="dataset-select"
-                                    value={selectedDataset}
-                                    label="Dataset"
-                                    onChange={onDatasetSelectChange}
-                                >
-                                    {datasets &&
-                                        datasets.map((dataset: IDataset) => (
-                                            <MenuItem key={dataset.id} value={dataset.id}>
-                                                {dataset.name}
-                                            </MenuItem>
-                                        ))}
-                                </Select>
-                                <FormHelperText>Use this dataset for model inference.</FormHelperText>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <FormControl fullWidth>
-                                <TextField
-                                    label="Upload chunk size"
-                                    variant="outlined"
-                                    value={uploadChunkSize}
-                                    onChange={(e) => setUploadChunksize(e.target.value)}
-                                    type="number"
-                                    inputProps={{ inputMode: 'numeric', min: 0 }}
-                                />
-                                <FormHelperText>Number of dataset samples to upload at once.</FormHelperText>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <FormControl fullWidth>
-                                <InputLabel id="model">Model *</InputLabel>
-                                <Select
-                                    labelId="model"
-                                    id="model-select"
-                                    value={selectedModel}
-                                    label="Dataset"
-                                    onChange={onModelSelectChange}
-                                >
-                                    {models &&
-                                        models.map((model: IModel) => (
-                                            <MenuItem key={model.id} value={model.id}>
-                                                {model.name}
-                                            </MenuItem>
-                                        ))}
-                                </Select>
-                                <FormHelperText>Model to benchmark on selected dataset.</FormHelperText>
-                            </FormControl>
-                        </Grid>
-                        {tritonInferenceClients.includes(benchmarkConfig.values.inference_client) ? (
-                            <>
+            <Dialog open onClose={onClose} fullWidth maxWidth="xs">
+                <DialogTitle>Create a new benchmark job</DialogTitle>
+                <DialogContent>
+                    <>
+                        {sensors && sensorConfig ? (
+                            <Grid container justifyContent="space-between" spacing={2}>
                                 <Grid item xs={12}>
-                                    <FileInput
-                                        text="Select model configuration"
-                                        accept="text/plain"
-                                        multiple={false}
-                                        onChange={onModelConfigurationFileSelectChange}
-                                    />
-                                    <FormHelperText>
-                                        Optional but recommended *.pbtxt config for ONNX models.
-                                    </FormHelperText>
+                                    <Typography>
+                                        <b>Optional:</b> Capture a new dataset using a sensor first.
+                                    </Typography>
                                 </Grid>
-                            </>
-                        ) : null}
-                        <Grid item xs={12}>
-                            <Divider />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <Typography>2. Configure your benchmark job:</Typography>
-                        </Grid>
-                        <Grid item xs={12} mt={-2}>
-                            <Form
-                                schema={benchmarkConfig.schema}
-                                onChange={(form) => onCreateJobFormChange(form)}
-                                onSubmit={(form) => onCreateJobFormSubmit(form)}
-                                formData={benchmarkConfig.values}
-                                liveOmit={true}
-                                omitExtraData={true}
-                                liveValidate={true}
-                            >
-                                <Grid container justifyContent="center" alignItems="center">
-                                    <Grid item xs={12}>
-                                        {createErrorMsg ? (
-                                            <Alert severity="error" sx={{ mb: 2 }}>
-                                                {createErrorMsg}
-                                            </Alert>
-                                        ) : null}
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <Box display="flex" justifyContent="center">
-                                            <LoadingButton
-                                                type="submit"
-                                                variant="contained"
-                                                loading={isCreating}
-                                                loadingPosition="end"
-                                                endIcon={<StartIcon />}
-                                            >
-                                                Start Benchmark Job
-                                            </LoadingButton>
-                                        </Box>
-                                    </Grid>
+                                <Grid item xs={12}>
+                                    <FormControl fullWidth>
+                                        <InputLabel id="sensor">Sensor</InputLabel>
+                                        <Select
+                                            labelId="sensor"
+                                            id="sensor-select"
+                                            value={selectedSensor}
+                                            label="Sensor"
+                                            onChange={onSensorSelectChange}
+                                        >
+                                            <MenuItem value="">
+                                                <em>Please select a sensor...</em>
+                                            </MenuItem>
+                                            {sensors.map((sensor: ISensorInfo) => (
+                                                <MenuItem key={sensor.hostname} value={sensor.hostname}>
+                                                    {sensor.hostname}: {sensor.name}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                        <FormHelperText>
+                                            Use this sensor to capture a new benchmark dataset.
+                                        </FormHelperText>
+                                    </FormControl>
                                 </Grid>
-                            </Form>
-                        </Grid>
-                    </Grid>
-                ) : (
-                    <Grid item container justifyContent="center">
-                        <CircularProgress color="primary" />
-                    </Grid>
-                )}
-                </>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose}>Close</Button>
-            </DialogActions>
-        </Dialog>
-        <AlertSnackbar
-            message={snackbarMessage.message}
-            severity={snackbarMessage.severity}
-            open={snackbarMessage.open}
-            onClose={() => setSnackbarMessage({ ...snackbarMessage, open: false })}
-        />
+                                {selectedSensor ? (
+                                    <Grid item xs={12} mt={-2}>
+                                        <Form
+                                            schema={sensorConfig.schema}
+                                            onChange={(form) => onSensorConfigFormChange(form)}
+                                            onSubmit={(form) => onSensorConfigFormSubmit(form)}
+                                            formData={sensorConfig.values}
+                                            liveOmit={true}
+                                            omitExtraData={true}
+                                            liveValidate={true}
+                                        >
+                                            <Grid container justifyContent="center" alignItems="center">
+                                                <Grid item xs={12}>
+                                                    {captureErrorMsg ? (
+                                                        <Alert severity="error" sx={{ mb: 2 }}>
+                                                            {captureErrorMsg}
+                                                        </Alert>
+                                                    ) : null}
+                                                </Grid>
+                                                <Grid item xs={12}>
+                                                    <Box display="flex" justifyContent="center">
+                                                        <LoadingButton
+                                                            type="submit"
+                                                            variant="contained"
+                                                            loading={isCapturing}
+                                                            loadingPosition="end"
+                                                            endIcon={<CameraIcon />}
+                                                        >
+                                                            Capture Dataset
+                                                        </LoadingButton>
+                                                    </Box>
+                                                </Grid>
+                                            </Grid>
+                                        </Form>
+                                    </Grid>
+                                ) : null}
+                                <Grid item xs={12}>
+                                    <Divider />
+                                </Grid>
+                            </Grid>
+                        ) : (
+                            <Grid item container justifyContent="center">
+                                <CircularProgress color="primary" />
+                            </Grid>
+                        )}
+
+                        {benchmarkConfig ? (
+                            <Grid container justifyContent="space-between" spacing={2}>
+                                <Grid item xs={12} mt={2}>
+                                    <Typography>1. Select your dataset and model:</Typography>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <FormControl fullWidth>
+                                        <InputLabel id="dataset">Dataset *</InputLabel>
+                                        <Select
+                                            labelId="dataset"
+                                            id="dataset-select"
+                                            value={selectedDataset}
+                                            label="Dataset"
+                                            onChange={onDatasetSelectChange}
+                                        >
+                                            {datasets &&
+                                                datasets.map((dataset: IDataset) => (
+                                                    <MenuItem key={dataset.id} value={dataset.id}>
+                                                        {dataset.name}
+                                                    </MenuItem>
+                                                ))}
+                                        </Select>
+                                        <FormHelperText>Use this dataset for model inference.</FormHelperText>
+                                    </FormControl>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <FormControl fullWidth>
+                                        <TextField
+                                            label="Upload chunk size"
+                                            variant="outlined"
+                                            value={uploadChunkSize}
+                                            onChange={(e) => setUploadChunksize(e.target.value)}
+                                            type="number"
+                                            inputProps={{ inputMode: 'numeric', min: 0 }}
+                                        />
+                                        <FormHelperText>Number of dataset samples to upload at once.</FormHelperText>
+                                    </FormControl>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <FormControl fullWidth>
+                                        <InputLabel id="model">Model *</InputLabel>
+                                        <Select
+                                            labelId="model"
+                                            id="model-select"
+                                            value={selectedModel}
+                                            label="Dataset"
+                                            onChange={onModelSelectChange}
+                                        >
+                                            {models &&
+                                                models.map((model: IModel) => (
+                                                    <MenuItem key={model.id} value={model.id}>
+                                                        {model.name}
+                                                    </MenuItem>
+                                                ))}
+                                        </Select>
+                                        <FormHelperText>Model to benchmark on selected dataset.</FormHelperText>
+                                    </FormControl>
+                                </Grid>
+                                {tritonInferenceClients.includes(benchmarkConfig.values.inference_client) ? (
+                                    <>
+                                        <Grid item xs={12}>
+                                            <FileInput
+                                                text="Select model configuration"
+                                                accept="text/plain"
+                                                multiple={false}
+                                                onChange={onModelConfigurationFileSelectChange}
+                                            />
+                                            <FormHelperText>
+                                                Optional but recommended *.pbtxt config for ONNX models.
+                                            </FormHelperText>
+                                        </Grid>
+                                    </>
+                                ) : null}
+                                <Grid item xs={12}>
+                                    <Divider />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Typography>2. Configure your benchmark job:</Typography>
+                                </Grid>
+                                <Grid item xs={12} mt={-2}>
+                                    <Form
+                                        schema={benchmarkConfig.schema}
+                                        onChange={(form) => onCreateJobFormChange(form)}
+                                        onSubmit={(form) => onCreateJobFormSubmit(form)}
+                                        formData={benchmarkConfig.values}
+                                        liveOmit={true}
+                                        omitExtraData={true}
+                                        liveValidate={true}
+                                    >
+                                        <Grid container justifyContent="center" alignItems="center">
+                                            <Grid item xs={12}>
+                                                {createErrorMsg ? (
+                                                    <Alert severity="error" sx={{ mb: 2 }}>
+                                                        {createErrorMsg}
+                                                    </Alert>
+                                                ) : null}
+                                            </Grid>
+                                            <Grid item xs={12}>
+                                                <Box display="flex" justifyContent="center">
+                                                    <LoadingButton
+                                                        type="submit"
+                                                        variant="contained"
+                                                        loading={isCreating}
+                                                        loadingPosition="end"
+                                                        endIcon={<StartIcon />}
+                                                    >
+                                                        Start Benchmark Job
+                                                    </LoadingButton>
+                                                </Box>
+                                            </Grid>
+                                        </Grid>
+                                    </Form>
+                                </Grid>
+                            </Grid>
+                        ) : (
+                            <Grid item container justifyContent="center">
+                                <CircularProgress color="primary" />
+                            </Grid>
+                        )}
+                    </>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onClose}>Close</Button>
+                </DialogActions>
+            </Dialog>
+            <AlertSnackbar
+                message={snackbarMessage.message}
+                severity={snackbarMessage.severity}
+                open={snackbarMessage.open}
+                onClose={() => setSnackbarMessage({ ...snackbarMessage, open: false })}
+            />
         </>
     );
 }
