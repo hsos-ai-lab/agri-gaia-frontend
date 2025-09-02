@@ -43,6 +43,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import SpeedIcon from '@mui/icons-material/Speed';
 import CreateIcon from '@mui/icons-material/Create';
 import ListIcon from '@mui/icons-material/List';
+import CameraIcon from '@mui/icons-material/Camera';
 
 import { useNavigate } from 'react-router-dom';
 import { createSubdomainUrl, openInNewTab } from '../../util';
@@ -144,12 +145,17 @@ const internalLinks: Array<IListItem> = [
         icon: <SpeedIcon />,
         subMenu: [
             {
-                text: 'Create Job',
+                text: 'Sensors',
+                link: '/edge-benchmark-sensors',
+                icon: <CameraIcon />,
+            },
+            {
+                text: 'Benchmarks',
                 link: '/edge-benchmark',
                 icon: <CreateIcon />,
             },
             {
-                text: 'Job Overview',
+                text: 'Jobs',
                 link: '/edge-benchmark-jobs',
                 icon: <ListIcon />,
             },

@@ -19,6 +19,8 @@ import IDeviceHeader from '../types/edge-benchmark/IDeviceHeader';
 import { EDGE_BENCHMARK_DEVICE_HEADER_PATH } from '../endpoints';
 import BenchmarkJobCreateDialog from '../components/edge-benchmark/BenchmarkJobCreateDialog';
 import { httpGet } from '../api';
+import IAlertMessage from '../types/IAlertMessage';
+import AlertSnackbar from '../components/common/AlertSnackbar';
 
 const EdgeBenchmark = () => {
     const keycloak = useKeycloak();
@@ -26,6 +28,11 @@ const EdgeBenchmark = () => {
     const [deviceHeaders, setDeviceHeaders] = useState<IDeviceHeader[]>([]);
     const [selectedDeviceHeaders, setSelectedDeviceHeaders] = useState<IDeviceHeader[]>([]);
     const [benchmarkJobConfigModalOpen, setBenchmarkJobConfigModalOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState<IAlertMessage>({
+        message: undefined,
+        severity: undefined,
+        open: false,
+    });
 
     useEffect(() => {
         fetchDeviceHeaders();
@@ -49,6 +56,14 @@ const EdgeBenchmark = () => {
 
     const onBenchmarkJobCreateDialogClose = () => {
         setBenchmarkJobConfigModalOpen(false);
+    };
+
+    const onBenchmarkJobCreateSuccess = () => {
+        setSnackbarMessage({
+            message: `Benchmark job(s) are running. Monitor the Task Drawer for details.`,
+            severity: 'info',
+            open: true,
+        });
     };
 
     const onBenchmarkJobCreateIconClick = () => {
@@ -84,9 +99,16 @@ const EdgeBenchmark = () => {
             {benchmarkJobConfigModalOpen && selectedDeviceHeaders.length ? (
                 <BenchmarkJobCreateDialog
                     onClose={onBenchmarkJobCreateDialogClose}
+                    onSuccess={onBenchmarkJobCreateSuccess}
                     selectedDeviceHeaders={selectedDeviceHeaders}
                 />
             ) : null}
+            <AlertSnackbar
+                message={snackbarMessage.message}
+                severity={snackbarMessage.severity}
+                open={snackbarMessage.open}
+                onClose={() => setSnackbarMessage({ ...snackbarMessage, open: false })}
+            />
         </>
     );
 };
