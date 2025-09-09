@@ -1,11 +1,6 @@
-// SPDX-FileCopyrightText: 2024 Osnabrück University of Applied Sciences
+// SPDX-FileCopyrightText: 2025 Osnabrück University of Applied Sciences
 // SPDX-FileContributor: Andreas Schliebitz
-// SPDX-FileContributor: Henri Graf
-// SPDX-FileContributor: Jonas Tüpker
-// SPDX-FileContributor: Lukas Hesse
-// SPDX-FileContributor: Maik Fruhner
 // SPDX-FileContributor: Prof. Dr.-Ing. Heiko Tapken
-// SPDX-FileContributor: Tobias Wamhof
 //
 // SPDX-License-Identifier: MIT
 
@@ -16,9 +11,11 @@ import ISensorInfo from '../types/edge-benchmark/ISensorInfo';
 import { Grid, Typography } from '@mui/material';
 import AlertSnackbar from '../components/common/AlertSnackbar';
 import useKeycloak from '../contexts/KeycloakContext';
-import SettingsIcon from '@mui/icons-material/Settings';
+import CaptureIcon from '@mui/icons-material/Camera';
+import AddIcon from '@mui/icons-material/Add';
 import { EDGE_BENCHMARK_SENSOR_PATH } from '../endpoints';
 import SensorList from '../components/edge-benchmark/SensorList';
+import SensorAddDialog from '../components/edge-benchmark/SensorAddDialog';
 import SensorConfigDialog from '../components/edge-benchmark/SensorConfigDialog';
 import { httpGet } from '../api';
 
@@ -28,6 +25,7 @@ const EdgeBenchmarkSensors = () => {
     const [sensorInfos, setSensorInfos] = useState<ISensorInfo[]>([]);
     const [selectedSensorInfo, setSelectedSensorInfo] = useState<ISensorInfo | undefined>(undefined);
     const [sensorConfigModalOpen, setSensorConfigModalOpen] = useState(false);
+    const [sensorAddModalOpen, setSensorAddModalOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState<IAlertMessage>({
         message: undefined,
         severity: undefined,
@@ -75,32 +73,78 @@ const EdgeBenchmarkSensors = () => {
         if (selectedSensorInfo) setSensorConfigModalOpen(true);
     };
 
+    const onSensorAddIconClick = () => {
+        if (sensorInfos) setSensorAddModalOpen(true);
+    };
+
+    const onSensorAddDialogClose = () => {
+        setSensorAddModalOpen(false);
+    };
+
+    const onSensorAddSuccess = (hostname: string) => {
+        fetchSensorInfos();
+        setSnackbarMessage({
+            message: `New sensor '${hostname}' was successfully added!`,
+            severity: 'success',
+            open: true,
+        });
+    };
+
+    const onSensorDeleteClick = (hostname: string) => {
+        fetchSensorInfos();
+        setSnackbarMessage({
+            message: `Sensor '${hostname}' was successfully deleted!`,
+            severity: 'success',
+            open: true,
+        });
+    };
+
     return (
         <>
             <Grid container justifyContent="space-between" sx={{ mb: 2 }}>
-                <Grid item xs={6}>
+                <Grid item xs={10}>
                     <Typography variant="h4" component="h4">
                         Edge Benchmark Sensors
                     </Typography>
                 </Grid>
-                {selectedSensorInfo ? (
-                    <Grid item xs={6}>
+                <Grid item xs={2}>
+                    <Fab
+                        color="primary"
+                        aria-label="add"
+                        size="small"
+                        sx={{ float: 'right' }}
+                        onClick={onSensorAddIconClick}
+                    >
+                        <AddIcon />
+                    </Fab>
+                    {selectedSensorInfo ? (
                         <Fab
                             color="primary"
-                            aria-label="add"
+                            aria-label="configure"
                             size="small"
-                            sx={{ float: 'right', mr: 2 }}
+                            sx={{ float: 'right', mr: 1 }}
                             onClick={onSensorConfigIconClick}
                         >
-                            <SettingsIcon />
+                            <CaptureIcon />
                         </Fab>
-                    </Grid>
-                ) : null}
+                    ) : null}
+                </Grid>
                 <Grid item xs={12}>
                     <Typography>Capture benchmark datasets by selecting a sensor from the list below.</Typography>
                 </Grid>
             </Grid>
-            <SensorList sensorInfos={sensorInfos} onSensorSelectionChange={onSensorSelectionChange} />
+            <SensorList
+                sensorInfos={sensorInfos}
+                onDelete={onSensorDeleteClick}
+                onSensorSelectionChange={onSensorSelectionChange}
+            />
+            {sensorAddModalOpen && sensorInfos ? (
+                <SensorAddDialog
+                    onClose={onSensorAddDialogClose}
+                    onSuccess={onSensorAddSuccess}
+                    sensorInfos={sensorInfos}
+                />
+            ) : null}
             {sensorConfigModalOpen && selectedSensorInfo ? (
                 <SensorConfigDialog
                     onClose={onSensorConfigDialogClose}

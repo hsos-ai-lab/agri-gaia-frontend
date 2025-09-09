@@ -1,28 +1,49 @@
-// SPDX-FileCopyrightText: 2024 Osnabrück University of Applied Sciences
+// SPDX-FileCopyrightText: 2025 Osnabrück University of Applied Sciences
 // SPDX-FileContributor: Andreas Schliebitz
-// SPDX-FileContributor: Henri Graf
-// SPDX-FileContributor: Jonas Tüpker
-// SPDX-FileContributor: Lukas Hesse
-// SPDX-FileContributor: Maik Fruhner
 // SPDX-FileContributor: Prof. Dr.-Ing. Heiko Tapken
-// SPDX-FileContributor: Tobias Wamhof
 //
 // SPDX-License-Identifier: MIT
 
+import { useState } from 'react';
+import useKeycloak from '../../contexts/KeycloakContext';
 import Button from '@mui/material/Button';
 import { DataGrid } from '@mui/x-data-grid';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { GridRowSelectionModel } from '@mui/x-data-grid';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ISensorInfo from '../../types/edge-benchmark/ISensorInfo';
+import LoadingButton from '@mui/lab/LoadingButton';
+import Tooltip from '@mui/material/Tooltip';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import { EDGE_BENCHMARK_SENSOR_PATH } from '../../endpoints';
+import { httpDelete } from '../../api';
 
 const SensorList = ({
     sensorInfos,
+    onDelete,
     onSensorSelectionChange,
 }: {
     sensorInfos: ISensorInfo[];
+    onDelete: (hostname: string) => void;
     onSensorSelectionChange: (selectedSensorInfos: ISensorInfo[]) => void;
 }) => {
+    const keycloak = useKeycloak();
+    const [sensorDeleteStates, setSensorDeleteStates] = useState<Record<string, boolean>>({});
+
+    const onSensorEditClick = (hostname: string) => {
+        // TODO: Implement
+        console.log('Edit:', hostname);
+    };
+
+    const onSensorDeleteClick = async (hostname: string) => {
+        setSensorDeleteStates({ ...sensorDeleteStates, [hostname]: true });
+        httpDelete(keycloak, `${EDGE_BENCHMARK_SENSOR_PATH}/${hostname}`)
+            .then(() => onDelete(hostname))
+            .catch((error) => console.error(error))
+            .finally(() => setSensorDeleteStates({ ...sensorDeleteStates, [hostname]: false }));
+    };
+
     const columns = [
         { field: 'type', headerName: 'Type', flex: 1 },
         { field: 'name', headerName: 'Name', flex: 1 },
@@ -73,6 +94,48 @@ const SensorList = ({
                     <Button disabled variant="text">
                         {params.value ? <CheckCircleIcon color="primary" /> : <CancelIcon color="error" />}
                     </Button>
+                );
+            },
+        },
+        {
+            field: 'actions',
+            headerName: 'Actions',
+            width: 150,
+            valueGetter: (value: any, row: any) => {
+                return row.hostname;
+            },
+            renderCell: (params: any) => {
+                return (
+                    <>
+                        <Tooltip title="Edit sensor">
+                            <span>
+                                <LoadingButton
+                                    color="primary"
+                                    loading={false}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onSensorEditClick(params.value);
+                                    }}
+                                >
+                                    <EditIcon />
+                                </LoadingButton>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Delete sensor">
+                            <span>
+                                <LoadingButton
+                                    color="error"
+                                    loading={sensorDeleteStates[params.value]}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onSensorDeleteClick(params.value);
+                                    }}
+                                >
+                                    <DeleteIcon />
+                                </LoadingButton>
+                            </span>
+                        </Tooltip>
+                    </>
                 );
             },
         },

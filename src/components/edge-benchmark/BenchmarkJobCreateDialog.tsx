@@ -37,7 +37,12 @@ import FileInput from '../common/FileInput';
 import useApplicationTasks from '../../contexts/TasksContext';
 import IBenchmarkConfig from '../../types/edge-benchmark/IBenchmarkConfig';
 import { IInferenceClient } from '../../types/edge-benchmark/IInferenceClients';
-import { DATASETS_PATH, MODELS_PATH, EDGE_BENCHMARK_FORM_PATH, EDGE_BENCHMARK_START_PATH } from '../../endpoints';
+import {
+    DATASETS_PATH,
+    MODELS_PATH,
+    EDGE_BENCHMARK_START_PATH,
+    EDGE_BENCHMARK_FORM_JOB_CREATE_PATH,
+} from '../../endpoints';
 import { httpGet, httpUpload } from '../../api';
 
 interface IBenchmarkJobCreateProps {
@@ -63,7 +68,7 @@ export default function ({ selectedDeviceHeaders, onClose, onSuccess }: IBenchma
     const tritonInferenceClients = ['TritonDenseNetClient', 'TritonYoloClient'];
 
     const fetchBenchmarkConfigFormSchema = async () => {
-        httpGet(keycloak, `${EDGE_BENCHMARK_FORM_PATH}/create`)
+        httpGet(keycloak, EDGE_BENCHMARK_FORM_JOB_CREATE_PATH)
             .then((_schema) => setBenchmarkConfig({ schema: _schema, values: {} }))
             .catch((error) => {
                 console.error(error);

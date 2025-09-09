@@ -26,7 +26,7 @@ import ISensorInfo from '../../types/edge-benchmark/ISensorInfo';
 import useKeycloak from '../../contexts/KeycloakContext';
 import { httpGet, httpPost } from '../../api';
 import { downloadBlob } from '../../util';
-import { EDGE_BENCHMARK_FORM_PATH, EDGE_BENCHMARK_SENSOR_PATH } from '../../endpoints';
+import { EDGE_BENCHMARK_SENSOR_PATH, EDGE_BENCHMARK_FORM_SENSOR_CONFIG_PATH } from '../../endpoints';
 
 interface ISensorConfigProps {
     selectedSensorInfo: ISensorInfo;
@@ -43,11 +43,8 @@ export default function ({ selectedSensorInfo, onClose, onSubmit, onSuccess }: I
     const [captureErrorMsg, setCaptureErrorMsg] = useState<string | undefined>(undefined);
 
     const fetchSensorConfigFormSchema = async () => {
-        httpGet(keycloak, `${EDGE_BENCHMARK_FORM_PATH}/sensors`)
-            .then((_schema) => {
-                setSensorConfig({ schema: _schema, values: {} });
-                console.log(_schema);
-            })
+        httpGet(keycloak, EDGE_BENCHMARK_FORM_SENSOR_CONFIG_PATH)
+            .then((_schema) => setSensorConfig({ schema: _schema, values: {} }))
             .catch((error) => {
                 console.error(error);
                 setCaptureErrorMsg(`Fetching sensor configuration form: ${error.message}`);
@@ -95,7 +92,7 @@ export default function ({ selectedSensorInfo, onClose, onSubmit, onSuccess }: I
                 <DialogContent>
                     <>
                         {sensorConfig ? (
-                            <Grid container justifyContent="space-between" spacing={2}>
+                            <Grid container>
                                 <Grid item xs={12} mt={-2}>
                                     <Form
                                         schema={sensorConfig.schema}

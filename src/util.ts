@@ -171,3 +171,14 @@ export const createSubdomainUrl = (subdomain: string, postfix = ''): string => {
 
     return url + postfix;
 };
+
+export const isValidIPv4 = (ip: string): boolean => {
+    const ipv4Regex = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}$/;
+    return ipv4Regex.test(ip);
+};
+
+export const isValidHostname = (hostname: string): boolean => {
+    if (hostname.length > 253) return false;
+    const hostnameRegex = /^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9-]{1,63}(?<!-))*$/;
+    return hostnameRegex.test(hostname);
+};
