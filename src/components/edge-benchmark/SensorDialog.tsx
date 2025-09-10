@@ -119,7 +119,7 @@ export default function ({
 
     return (
         <Dialog open onClose={onClose} fullWidth maxWidth="xs">
-            <DialogTitle>Add a new sensor</DialogTitle>
+            <DialogTitle>{sensorInfoToEdit ? 'Edit Sensor' : 'Add Sensor'}</DialogTitle>
             <DialogContent>
                 {sensorInfo ? (
                     <Grid container>
@@ -148,7 +148,7 @@ export default function ({
                                                 loadingPosition="end"
                                                 endIcon={sensorInfoToEdit ? <EditIcon /> : <AddIcon />}
                                             >
-                                                {sensorInfoToEdit ? 'Update Sensor' : 'Add Sensor'}
+                                                {sensorInfoToEdit ? 'Edit Sensor' : 'Add Sensor'}
                                             </LoadingButton>
                                         </Box>
                                     </Grid>
