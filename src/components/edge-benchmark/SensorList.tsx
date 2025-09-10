@@ -21,20 +21,17 @@ import { httpDelete } from '../../api';
 
 const SensorList = ({
     sensorInfos,
+    onEdit,
     onDelete,
     onSensorSelectionChange,
 }: {
     sensorInfos: ISensorInfo[];
+    onEdit: (sensorInfo: ISensorInfo) => void;
     onDelete: (hostname: string) => void;
     onSensorSelectionChange: (selectedSensorInfos: ISensorInfo[]) => void;
 }) => {
     const keycloak = useKeycloak();
     const [sensorDeleteStates, setSensorDeleteStates] = useState<Record<string, boolean>>({});
-
-    const onSensorEditClick = (hostname: string) => {
-        // TODO: Implement
-        console.log('Edit:', hostname);
-    };
 
     const onSensorDeleteClick = async (hostname: string) => {
         setSensorDeleteStates({ ...sensorDeleteStates, [hostname]: true });
@@ -56,8 +53,8 @@ const SensorList = ({
             field: 'rtt',
             headerName: 'Latency',
             flex: 1,
-            valueGetter: (value: any, row: any) => {
-                const rtt_s = row?.status.rtt;
+            valueGetter: (value: any, row: ISensorInfo) => {
+                const rtt_s = row?.status?.rtt;
                 if (!rtt_s) return 'N/A';
                 return `${(rtt_s * 1000).toFixed(3)} ms`;
             },
@@ -67,8 +64,8 @@ const SensorList = ({
             field: 'last_seen',
             headerName: 'Last seen',
             width: 250,
-            valueGetter: (value: any, row: any) => {
-                const last_seen = row?.status.last_seen;
+            valueGetter: (value: any, row: ISensorInfo) => {
+                const last_seen = row?.status?.last_seen;
                 if (!last_seen) return 'never';
                 const date = new Date(last_seen);
 
@@ -101,7 +98,7 @@ const SensorList = ({
             field: 'actions',
             headerName: 'Actions',
             width: 150,
-            valueGetter: (value: any, row: any) => {
+            valueGetter: (value: any, row: ISensorInfo) => {
                 return row.hostname;
             },
             renderCell: (params: any) => {
@@ -114,7 +111,7 @@ const SensorList = ({
                                     loading={false}
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        onSensorEditClick(params.value);
+                                        onEdit(params.row);
                                     }}
                                 >
                                     <EditIcon />

@@ -15,7 +15,7 @@ import CaptureIcon from '@mui/icons-material/Camera';
 import AddIcon from '@mui/icons-material/Add';
 import { EDGE_BENCHMARK_SENSOR_PATH } from '../endpoints';
 import SensorList from '../components/edge-benchmark/SensorList';
-import SensorAddDialog from '../components/edge-benchmark/SensorAddDialog';
+import SensorDialog from '../components/edge-benchmark/SensorDialog';
 import SensorConfigDialog from '../components/edge-benchmark/SensorConfigDialog';
 import { httpGet } from '../api';
 
@@ -23,9 +23,11 @@ const EdgeBenchmarkSensors = () => {
     const keycloak = useKeycloak();
 
     const [sensorInfos, setSensorInfos] = useState<ISensorInfo[]>([]);
+    const [sensorInfoToEdit, setSensorInfoToEdit] = useState<ISensorInfo | undefined>(undefined);
+    const [sensorInfoToEditHostname, setSensorInfoToEditHostname] = useState<string | undefined>(undefined);
     const [selectedSensorInfo, setSelectedSensorInfo] = useState<ISensorInfo | undefined>(undefined);
     const [sensorConfigModalOpen, setSensorConfigModalOpen] = useState(false);
-    const [sensorAddModalOpen, setSensorAddModalOpen] = useState(false);
+    const [sensorModalOpen, setSensorModalOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState<IAlertMessage>({
         message: undefined,
         severity: undefined,
@@ -74,11 +76,12 @@ const EdgeBenchmarkSensors = () => {
     };
 
     const onSensorAddIconClick = () => {
-        if (sensorInfos) setSensorAddModalOpen(true);
+        if (sensorInfos) setSensorModalOpen(true);
     };
 
     const onSensorAddDialogClose = () => {
-        setSensorAddModalOpen(false);
+        setSensorInfoToEdit(undefined);
+        setSensorModalOpen(false);
     };
 
     const onSensorAddSuccess = (hostname: string) => {
@@ -88,6 +91,21 @@ const EdgeBenchmarkSensors = () => {
             severity: 'success',
             open: true,
         });
+    };
+
+    const onSensorEditSuccess = (hostname: string) => {
+        fetchSensorInfos();
+        setSnackbarMessage({
+            message: `Sensor '${hostname}' was successfully updated!`,
+            severity: 'success',
+            open: true,
+        });
+    };
+
+    const onSensorEditClick = (sensorInfo: ISensorInfo) => {
+        setSensorInfoToEditHostname(sensorInfo.hostname);
+        setSensorInfoToEdit(sensorInfo);
+        setSensorModalOpen(true);
     };
 
     const onSensorDeleteClick = (hostname: string) => {
@@ -134,14 +152,18 @@ const EdgeBenchmarkSensors = () => {
                 </Grid>
             </Grid>
             <SensorList
-                sensorInfos={sensorInfos}
+                onEdit={onSensorEditClick}
                 onDelete={onSensorDeleteClick}
                 onSensorSelectionChange={onSensorSelectionChange}
+                sensorInfos={sensorInfos}
             />
-            {sensorAddModalOpen && sensorInfos ? (
-                <SensorAddDialog
+            {sensorModalOpen && sensorInfos ? (
+                <SensorDialog
+                    onAdd={onSensorAddSuccess}
+                    onEdit={onSensorEditSuccess}
                     onClose={onSensorAddDialogClose}
-                    onSuccess={onSensorAddSuccess}
+                    sensorInfoToEditHostname={sensorInfoToEditHostname}
+                    sensorInfoToEdit={sensorInfoToEdit}
                     sensorInfos={sensorInfos}
                 />
             ) : null}

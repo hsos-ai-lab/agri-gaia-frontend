@@ -14,6 +14,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
 import LoadingButton from '@mui/lab/LoadingButton';
 import CircularProgress from '@mui/material/CircularProgress';
 import Form from '@rjsf/material-ui/v5';
@@ -21,26 +22,32 @@ import { isValidHostname, isValidIPv4 } from '../../util';
 import useKeycloak from '../../contexts/KeycloakContext';
 import ISensorInfo from '../../types/edge-benchmark/ISensorInfo';
 import { EDGE_BENCHMARK_SENSOR_PATH, EDGE_BENCHMARK_FORM_SENSOR_ADD_PATH } from '../../endpoints';
-import { httpGet, httpPost } from '../../api';
+import { httpGet, httpPost, httpPut } from '../../api';
 
 export default function ({
-    sensorInfos,
+    onAdd,
+    onEdit,
     onClose,
-    onSuccess,
+    sensorInfoToEditHostname,
+    sensorInfoToEdit,
+    sensorInfos,
 }: {
+    sensorInfoToEditHostname: string | undefined;
+    sensorInfoToEdit: ISensorInfo | undefined;
     sensorInfos: ISensorInfo[];
     onClose: () => void;
-    onSuccess: (hostname: string) => void;
+    onAdd: (hostname: string) => void;
+    onEdit: (hostname: string) => void;
 }) {
     const keycloak = useKeycloak();
 
     const [sensorInfo, setSensorInfo] = useState<Record<string, any> | undefined>(undefined);
-    const [isAdding, setIsAdding] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | undefined>(undefined);
 
     const fetchSensorAddFormSchema = () => {
         httpGet(keycloak, EDGE_BENCHMARK_FORM_SENSOR_ADD_PATH)
-            .then((_schema) => setSensorInfo({ schema: _schema, values: {} }))
+            .then((_schema) => setSensorInfo({ schema: _schema, values: sensorInfoToEdit ?? {} }))
             .catch((error) => {
                 console.error(error);
                 setErrorMsg(`Fetching sensor add form: ${error.message}`);
@@ -57,7 +64,9 @@ export default function ({
 
     const validateAddSensorFormInputs = () => {
         const newSensor = sensorInfo?.values;
-        if (sensorInfos.some((sensor) => sensor.hostname === newSensor.hostname)) {
+        const sensorExists = sensorInfos.some((sensor) => sensor.hostname === newSensor.hostname);
+
+        if ((!sensorInfoToEdit || sensorInfoToEditHostname !== newSensor.hostname) && sensorExists) {
             setErrorMsg(`Sensor with hostname '${newSensor.hostname}' already exists.`);
             return false;
         }
@@ -77,24 +86,34 @@ export default function ({
 
     const onAddSensorFormSubmit = (form: any) => {
         setSensorInfo({ ...sensorInfo, values: form.formData });
-        if (sensorInfo) {
-            setErrorMsg(undefined);
-            if (validateAddSensorFormInputs()) {
-                setIsAdding(true);
-                httpPost(keycloak, EDGE_BENCHMARK_SENSOR_PATH, sensorInfo.values)
+        setErrorMsg(undefined);
+        if (validateAddSensorFormInputs()) {
+            setIsProcessing(true);
+            if (sensorInfoToEdit) {
+                httpPut(keycloak, `${EDGE_BENCHMARK_SENSOR_PATH}/${sensorInfoToEditHostname}`, sensorInfo?.values)
                     .then((sensorInfo: ISensorInfo) => {
-                        console.log('Added sensor:', sensorInfo);
+                        console.log('Updated sensor:', sensorInfo);
                         onClose();
-                        onSuccess(sensorInfo.hostname);
+                        onEdit(sensorInfo.hostname);
                     })
                     .catch((error) => {
                         console.log(error);
                         setErrorMsg(error.message);
                     })
-                    .finally(() => setIsAdding(false));
+                    .finally(() => setIsProcessing(false));
+            } else {
+                httpPost(keycloak, EDGE_BENCHMARK_SENSOR_PATH, sensorInfo?.values)
+                    .then((sensorInfo: ISensorInfo) => {
+                        console.log('Added sensor:', sensorInfo);
+                        onClose();
+                        onAdd(sensorInfo.hostname);
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                        setErrorMsg(error.message);
+                    })
+                    .finally(() => setIsProcessing(false));
             }
-        } else {
-            setErrorMsg('Sensor information is empty.');
         }
     };
 
@@ -125,11 +144,11 @@ export default function ({
                                             <LoadingButton
                                                 type="submit"
                                                 variant="contained"
-                                                loading={isAdding}
+                                                loading={isProcessing}
                                                 loadingPosition="end"
-                                                endIcon={<AddIcon />}
+                                                endIcon={sensorInfoToEdit ? <EditIcon /> : <AddIcon />}
                                             >
-                                                Add Sensor
+                                                {sensorInfoToEdit ? 'Update Sensor' : 'Add Sensor'}
                                             </LoadingButton>
                                         </Box>
                                     </Grid>
