@@ -83,7 +83,7 @@ export default function ({ selectedSensorInfo, onClose, onSubmit, onSuccess }: I
     return (
         <>
             <Dialog open onClose={onClose} fullWidth maxWidth="xs">
-                <DialogTitle>Sensor configuration</DialogTitle>
+                <DialogTitle>Capture Dataset</DialogTitle>
                 <DialogContent>
                     <>
                         {sensorConfig ? (

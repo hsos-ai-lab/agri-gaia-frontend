@@ -264,7 +264,7 @@ export default function ({ selectedDeviceHeaders, onClose, onSuccess }: IBenchma
 
     return (
         <Dialog open onClose={onClose} fullWidth maxWidth="xs">
-            <DialogTitle>Create a new benchmark job</DialogTitle>
+            <DialogTitle>Create Benchmark Job</DialogTitle>
             <DialogContent>
                 {benchmarkConfig ? (
                     <Grid container justifyContent="space-between" spacing={2}>

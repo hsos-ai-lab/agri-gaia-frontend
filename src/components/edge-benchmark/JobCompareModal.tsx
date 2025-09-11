@@ -280,7 +280,7 @@ export default function ({
     return (
         <>
             <Dialog open onClose={onClose} fullWidth maxWidth="xl">
-                <DialogTitle>Benchmark comparison</DialogTitle>
+                <DialogTitle>Compare Benchmark Jobs</DialogTitle>
                 <DialogContent>
                     <TableContainer>
                         <Table>
