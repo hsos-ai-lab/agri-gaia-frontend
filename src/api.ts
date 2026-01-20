@@ -11,7 +11,7 @@
 
 import { getReasonPhrase } from 'http-status-codes';
 
-const PROJECT_BASE_URL = 'agri-gaia.localhost';
+const PROJECT_BASE_URL = 'agri-gaia.dev';
 const DOWNLOAD_CONTENT_TYPES: { [key: string]: string } = {
     'application/x-zip-compressed': 'archive.zip',
     'application/octet-stream': 'data.bin',
