@@ -1,6 +1,6 @@
 {
     "realm": "default-realm",
-    "auth-server-url": "https://keycloak.agri-gaia.dev/",
+    "auth-server-url": "https://keycloak.agri-gaia.localhost/",
     "ssl-required": "external",
     "resource": "frontend",
     "public-client": true,
