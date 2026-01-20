@@ -22,6 +22,7 @@ import TableBody from '@mui/material/TableBody';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
+import { capitalizeFirstValueOfSting } from '../../util';
 
 export default function ({
     benchmarkJob,
@@ -79,32 +80,32 @@ export default function ({
         }
         return means;
     };
-    const benchmark_performance = benchmarkJobResult.benchmark_job.inference_results.performance
-    const floating_precision = 4
-    
-    function getByPath(obj: any, path: string) { 
-        return path.split('.').reduce((acc, key) => acc?.[key], obj);
-    }
+    const benchmark_performance = benchmarkJobResult.benchmark_job.inference_results.performance;
+    const floating_precision = 4;
 
-    const processingStep = [
-        "preprocess",
-        "inference",
-        "postprocess",
-    ]
-    
-    function createRowWithNameAndValues(name: string, value: string): string[] { 
-        const list: string[] = [name]
-        processingStep.map(step => {
-            list.push(getByPath(benchmark_performance, step + value).toFixed(floating_precision).toString());
-        })
-        return list
-    }
+    const getByPath = (obj: any, path: string): number => {
+        return path.split('.').reduce((acc, key) => acc?.[key], obj);
+    };
+
+    const processingSteps = ['preprocess', 'inference', 'postprocess'];
+
+    const createRowWithNameAndValues = (name: string, value: string, nameOfFirstElement: string): string[] => {
+        let rest;
+        [nameOfFirstElement, ...rest] = [name];
+        processingSteps.map((step) => {
+            rest.push(
+                getByPath(benchmark_performance, step + value)
+                    .toFixed(floating_precision)
+                    .toString(),
+            );
+        });
+        return [nameOfFirstElement, ...rest];
+    };
 
     const rows = [
-        createRowWithNameAndValues("Total Time", ".total_time"),
-        createRowWithNameAndValues("Samples Per Second", ".samples_per_second"),
-        createRowWithNameAndValues("Average Latency", ".latency.average"),
-
+        createRowWithNameAndValues('Total Time', '.total_time', 'total_time'),
+        createRowWithNameAndValues('Samples Per Second', '.samples_per_second', 'samples_per_second'),
+        createRowWithNameAndValues('Average Latency', '.latency.average', 'latency.average'),
     ];
     return (
         <>
@@ -116,37 +117,38 @@ export default function ({
                 <DialogContent>
                     <Grid container justifyContent="space-around">
                         <Grid item xs={8}>
-                                <Typography 
-                                sx={{ mb: 2 }}
-                                gutterBottom>
-                                    Key Performance Indicators on {benchmark_performance.preprocess.sample_count.toFixed(0)} Samples {(benchmark_performance.warmup === null) ?  "without Warmup" : "with Warmup"}
-                                </Typography>
+                            <Typography sx={{ mb: 2 }} gutterBottom>
+                                Key Performance Indicators on {benchmark_performance.preprocess.sample_count.toFixed(0)}{' '}
+                                Samples {benchmark_performance.warmup === null ? 'without Warmup' : 'with Warmup'}
+                            </Typography>
                             <TableContainer component={Paper}>
                                 <Table aria-label="hot overview">
                                     <TableHead>
                                         <TableRow>
                                             <TableCell>Value</TableCell>
-                                            {processingStep.map(function(object, i){
-                                                return <TableCell align="right">{String(object).charAt(0).toUpperCase() + String(object).slice(1)}</TableCell>;
+                                            {processingSteps.map((step) => {
+                                                return (
+                                                    <TableCell align="right">
+                                                        {capitalizeFirstValueOfSting(step)}
+                                                    </TableCell>
+                                                );
                                             })}
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                    {rows.map((row) => (
-                                        <TableRow
-                                        key={row[0]}
-                                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                                        >
-                                        <TableCell component="th" scope="row">
-                                            {row[0]}
-                                        </TableCell>
-                                        {row.map(function(object, i){
-                                            if(i >= 1) {
-                                                return <TableCell align="right">{object}</TableCell>;
-                                            }
-                                        })}
-                                        </TableRow>
-                                    ))}
+                                        {rows.map(([label, ...row]) => (
+                                            <TableRow
+                                                key={label}
+                                                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                            >
+                                                <TableCell component="th" scope="row">
+                                                    {label}
+                                                </TableCell>
+                                                {row.map((cellValue) => {
+                                                    return <TableCell align="right">{cellValue}</TableCell>;
+                                                })}
+                                            </TableRow>
+                                        ))}
                                     </TableBody>
                                 </Table>
                             </TableContainer>
