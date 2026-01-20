@@ -209,6 +209,11 @@ const JobList = ({
                 onRowSelectionModelChange={(jobIds: GridRowSelectionModel) =>
                     onJobSelectionChange(jobs.filter((job) => jobIds.includes(job.id)))
                 }
+                initialState={{
+                    sorting: {
+                    sortModel: [{ field: 'timestamp', sort: 'desc' }],
+                    },
+                }}
             />
             {jobResultsPreviewModalOpen && selectedBenchmarkJobResult && selectedBenchmarkJob ? (
                 <JobResultsPreviewModal
