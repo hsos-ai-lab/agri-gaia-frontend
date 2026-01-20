@@ -110,8 +110,8 @@ export default function ({
         <>
             <Dialog open onClose={onClose} fullWidth maxWidth="xl">
                 <DialogTitle>
-                    Job #{benchmarkJob.id} — Model "{benchmarkJob.model.name}" with dataset "{benchmarkJob.dataset.name}
-                    " on device "{benchmarkJob.edge_device}"
+                    Job #{benchmarkJob.id} — Model "{benchmarkJob.model.name}" with Dataset "{benchmarkJob.dataset.name}
+                    " on Device "{benchmarkJob.edge_device}"
                 </DialogTitle>
                 <DialogContent>
                     <Grid container justifyContent="space-around">
