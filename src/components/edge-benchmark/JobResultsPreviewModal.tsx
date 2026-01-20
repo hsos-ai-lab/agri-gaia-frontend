@@ -104,6 +104,7 @@ export default function ({
         createRowWithNameAndValues("Total Time", ".total_time"),
         createRowWithNameAndValues("Samples Per Second", ".samples_per_second"),
         createRowWithNameAndValues("Average Latency", ".latency.average"),
+
     ];
     return (
         <>
@@ -118,7 +119,7 @@ export default function ({
                                 <Typography 
                                 sx={{ mb: 2 }}
                                 gutterBottom>
-                                    Key Performance Indicators on {benchmark_performance.preprocess.sample_count.toFixed(0)} Samples
+                                    Key Performance Indicators on {benchmark_performance.preprocess.sample_count.toFixed(0)} Samples {(benchmark_performance.warmup === null) ?  "without Warmup" : "with Warmup"}
                                 </Typography>
                             <TableContainer component={Paper}>
                                 <Table aria-label="hot overview">
