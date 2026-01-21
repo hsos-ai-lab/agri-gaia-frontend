@@ -90,7 +90,7 @@ export default function ({
     const processingSteps = ['preprocess', 'inference', 'postprocess'];
 
     const createRowWithNameAndValues = (name: string, value: string): string[] => {
-        let rowValues: string[] = [];
+        const rowValues: string[] = [];
         processingSteps.map((step) => {
             rowValues.push(
                 getByPath(benchmark_performance, step + value)
