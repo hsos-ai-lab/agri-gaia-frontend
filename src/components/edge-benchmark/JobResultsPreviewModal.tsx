@@ -14,6 +14,15 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import CodeEditor from '@uiw/react-textarea-code-editor';
 import IBenchmarkJob from '../../types/edge-benchmark/IBenchmarkJob';
+import Paper from '@mui/material/Paper';
+import TableContainer from '@mui/material/TableContainer';
+import TableCell from '@mui/material/TableCell';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Typography from '@mui/material/Typography';
+import { capitalizeFirstChar } from '../../util';
 
 export default function ({
     benchmarkJob,
@@ -71,17 +80,73 @@ export default function ({
         }
         return means;
     };
+    const benchmark_performance = benchmarkJobResult.benchmark_job.inference_results.performance;
+    const floating_precision = 4;
 
+    const getByPath = (obj: any, path: string): number => {
+        return path.split('.').reduce((acc, key) => acc?.[key], obj);
+    };
+
+    const processingSteps = ['preprocess', 'inference', 'postprocess'];
+
+    const createRowWithNameAndValues = (name: string, value: string): string[] => {
+        let rowValues: string[] = [];
+        processingSteps.map((step) => {
+            rowValues.push(
+                getByPath(benchmark_performance, step + value)
+                    .toFixed(floating_precision)
+                    .toString(),
+            );
+        });
+        return [name, ...rowValues];
+    };
+
+    const rows = [
+        createRowWithNameAndValues('Total Time', '.total_time'),
+        createRowWithNameAndValues('Samples Per Second', '.samples_per_second'),
+        createRowWithNameAndValues('Average Latency', '.latency.average'),
+    ];
     return (
         <>
             <Dialog open onClose={onClose} fullWidth maxWidth="xl">
                 <DialogTitle>
-                    Job #{benchmarkJob.id} — Model "{benchmarkJob.model.name}" with dataset "{benchmarkJob.dataset.name}
-                    " on device "{benchmarkJob.edge_device}"
+                    Job #{benchmarkJob.id} — Model "{benchmarkJob.model.name}" with Dataset "{benchmarkJob.dataset.name}
+                    " on Device "{benchmarkJob.edge_device}"
                 </DialogTitle>
                 <DialogContent>
-                    <Grid container justifyContent="space-between">
+                    <Grid container justifyContent="space-around">
                         <Grid item xs={8}>
+                            <Typography sx={{ mb: 2 }} gutterBottom>
+                                Key Performance Indicators on {benchmark_performance.preprocess.sample_count.toFixed(0)}{' '}
+                                Samples {benchmark_performance.warmup === null ? 'without Warmup' : 'with Warmup'}
+                            </Typography>
+                            <TableContainer component={Paper}>
+                                <Table aria-label="hot overview">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Value</TableCell>
+                                            {processingSteps.map((step) => {
+                                                return <TableCell align="right">{capitalizeFirstChar(step)}</TableCell>;
+                                            })}
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {rows.map(([label, ...rowValues]) => (
+                                            <TableRow
+                                                key={label}
+                                                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                            >
+                                                <TableCell component="th" scope="row">
+                                                    {label}
+                                                </TableCell>
+                                                {rowValues.map((cellValue) => {
+                                                    return <TableCell align="right">{cellValue}</TableCell>;
+                                                })}
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
                             <Line
                                 data={{
                                     labels: getSeries('time').map((datetime: string) => {
