@@ -183,6 +183,6 @@ export const isValidHostname = (hostname: string): boolean => {
     return hostnameRegex.test(hostname);
 };
 
-export const capitalizeFirstValueOfSting = (input: string): string => {
+export const capitalizeFirstChar = (input: string): string => {
     return String(input).charAt(0).toUpperCase() + String(input).slice(1);
-}
+};

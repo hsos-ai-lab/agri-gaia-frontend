@@ -22,7 +22,7 @@ import TableBody from '@mui/material/TableBody';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
-import { capitalizeFirstValueOfSting } from '../../util';
+import { capitalizeFirstChar } from '../../util';
 
 export default function ({
     benchmarkJob,
@@ -89,23 +89,22 @@ export default function ({
 
     const processingSteps = ['preprocess', 'inference', 'postprocess'];
 
-    const createRowWithNameAndValues = (name: string, value: string, nameOfFirstElement: string): string[] => {
-        let rest;
-        [nameOfFirstElement, ...rest] = [name];
+    const createRowWithNameAndValues = (name: string, value: string): string[] => {
+        let rowValues: string[] = [];
         processingSteps.map((step) => {
-            rest.push(
+            rowValues.push(
                 getByPath(benchmark_performance, step + value)
                     .toFixed(floating_precision)
                     .toString(),
             );
         });
-        return [nameOfFirstElement, ...rest];
+        return [name, ...rowValues];
     };
 
     const rows = [
-        createRowWithNameAndValues('Total Time', '.total_time', 'total_time'),
-        createRowWithNameAndValues('Samples Per Second', '.samples_per_second', 'samples_per_second'),
-        createRowWithNameAndValues('Average Latency', '.latency.average', 'latency.average'),
+        createRowWithNameAndValues('Total Time', '.total_time'),
+        createRowWithNameAndValues('Samples Per Second', '.samples_per_second'),
+        createRowWithNameAndValues('Average Latency', '.latency.average'),
     ];
     return (
         <>
@@ -127,16 +126,12 @@ export default function ({
                                         <TableRow>
                                             <TableCell>Value</TableCell>
                                             {processingSteps.map((step) => {
-                                                return (
-                                                    <TableCell align="right">
-                                                        {capitalizeFirstValueOfSting(step)}
-                                                    </TableCell>
-                                                );
+                                                return <TableCell align="right">{capitalizeFirstChar(step)}</TableCell>;
                                             })}
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {rows.map(([label, ...row]) => (
+                                        {rows.map(([label, ...rowValues]) => (
                                             <TableRow
                                                 key={label}
                                                 sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
@@ -144,7 +139,7 @@ export default function ({
                                                 <TableCell component="th" scope="row">
                                                     {label}
                                                 </TableCell>
-                                                {row.map((cellValue) => {
+                                                {rowValues.map((cellValue) => {
                                                     return <TableCell align="right">{cellValue}</TableCell>;
                                                 })}
                                             </TableRow>
