@@ -115,7 +115,7 @@ export default function ({
                 </DialogTitle>
                 <DialogContent>
                     <Grid container justifyContent="space-around">
-                        <Grid item xs={8}>
+                        <Grid item xs={10}>
                             <Typography sx={{ mb: 2 }} gutterBottom>
                                 Key Performance Indicators on {benchmark_performance.preprocess.sample_count.toFixed(0)}{' '}
                                 Samples {benchmark_performance.warmup === null ? 'without Warmup' : 'with Warmup'}
@@ -312,22 +312,6 @@ export default function ({
                                     },
                                 }}
                             />
-                        </Grid>
-                        <Grid item xs={4}>
-                            {benchmarkJobResult && (
-                                <CodeEditor
-                                    value={JSON.stringify(benchmarkJobResult, null, 4)}
-                                    language="json"
-                                    placeholder={`Loading benchmark results...`}
-                                    disabled
-                                    padding={15}
-                                    style={{
-                                        fontSize: 12,
-                                        fontFamily:
-                                            'ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace',
-                                    }}
-                                />
-                            )}
                         </Grid>
                     </Grid>
                 </DialogContent>
