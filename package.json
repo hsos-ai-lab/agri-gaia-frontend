@@ -94,6 +94,14 @@
         "react-scripts": "5.0.0"
     },
     "overrides": {
-        "mini-css-extract-plugin": "2.4.5"
+        "mini-css-extract-plugin": "2.4.5",
+        "eslint-plugin-import": {
+            "tsconfig-paths": {
+                "json5": "^1.0.1"
+            }
+        },
+            "react-scripts": {
+                "json5": "^2.2.2"
+        }
     }
 }
