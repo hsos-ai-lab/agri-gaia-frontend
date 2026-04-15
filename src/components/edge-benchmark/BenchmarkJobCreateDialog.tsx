@@ -55,7 +55,7 @@ export default function ({ selectedDeviceHeaders, onClose, onSuccess }: IBenchma
     const [selectedDataset, setSelectedDataset] = useState<string>('');
     const [models, setModels] = useState<Array<IModel> | undefined>(undefined);
     const [modelConfiguration, setModelConfiguration] = useState<File | undefined>();
-    const [uploadChunkSize, setUploadChunksize] = useState<string>('');
+    const [uploadChunkSize, setUploadChunksize] = useState<string>('10');
     const [selectedModel, setSelectedModel] = useState<string>('');
     const [isCreating, setIsCreating] = useState(false);
     const [createErrorMsg, setCreateErrorMsg] = useState<string | undefined>(undefined);
