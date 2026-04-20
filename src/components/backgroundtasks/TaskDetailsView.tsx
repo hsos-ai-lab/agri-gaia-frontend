@@ -15,8 +15,9 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { getLocalDateTime } from '../../util';
 import { getTaskStatusColor } from './utils';
 import { TaskStatusType } from '../../types/TaskStatus';
+import { ReactNode } from 'react';
 
-const GridRow = ({ label, value }: { label: string; value: unknown }) => {
+const GridRow = ({ label, value }: { label: string; value: ReactNode }) => {
     return (
         <>
             <Grid item xs={4}>
