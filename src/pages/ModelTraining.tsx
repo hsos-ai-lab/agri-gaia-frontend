@@ -19,7 +19,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import Form from '@rjsf/core';
+import Form from '@rjsf/mui';
 import validator from '@rjsf/validator-ajv8';
 import Chip from '@mui/material/Chip';
 import SendIcon from '@mui/icons-material/Send';

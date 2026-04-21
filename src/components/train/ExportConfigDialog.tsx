@@ -19,7 +19,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Typography from '@mui/material/Typography';
 import IAlertMessage from '../../types/IAlertMessage';
 import Link from '@mui/material/Link';
-import Form from '@rjsf/core';
+import Form from '@rjsf/mui';
 import validator from '@rjsf/validator-ajv8';
 import Alert from '@mui/material/Alert';
 import CodeEditor from '@uiw/react-textarea-code-editor';

@@ -9,7 +9,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-FROM node:16-alpine
+FROM node:20-alpine
 
 ARG PROJECT_BASE_URL
 ARG KEYCLOAK_REALM_NAME
