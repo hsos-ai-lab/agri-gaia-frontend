@@ -23,7 +23,7 @@ WORKDIR /code
 COPY package.json .
 
 # install all dependencies
-RUN npm install --legacy-peer-deps
+RUN npm install
 
 # copy everything
 COPY . .
