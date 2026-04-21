@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from 'react';
 import { LatLngTuple, LeafletEvent, GeoJSON, geoJSON, Map } from 'leaflet';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import { SideNavWidthContext } from '../../../contexts/SideNavWidthContext';
 import classNames from 'classnames';
 interface IMapProps {
@@ -54,6 +54,16 @@ export default function LeafletMap({ location, onLocationSelect, onMapMove }: IM
         }
     }, [location]);
 
+    function MapController() {
+        const map = useMap(); // Automatically gets the instance from context
+
+        useEffect(() => {
+            console.log('Map is ready:', map.getCenter());
+        }, [map]);
+
+        return null; // This component doesn't render anything itself
+    }
+
     return (
         <SideNavWidthContext.Consumer>
             {({ isOpen }) => (
@@ -66,8 +76,8 @@ export default function LeafletMap({ location, onLocationSelect, onMapMove }: IM
                     })}
                     zoom={13}
                     center={location}
-                    whenCreated={setMap}
                 >
+                    <MapController />
                     <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
