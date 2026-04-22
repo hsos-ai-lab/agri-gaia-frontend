@@ -16,7 +16,8 @@ import Button from '@mui/material/Button';
 import CameraIcon from '@mui/icons-material/Camera';
 import LoadingButton from '@mui/lab/LoadingButton';
 import CircularProgress from '@mui/material/CircularProgress';
-import Form from '@rjsf/material-ui/v5';
+import Form from '@rjsf/mui';
+import validator from '@rjsf/validator-ajv8';
 import ISensorInfo from '../../types/edge-benchmark/ISensorInfo';
 import useKeycloak from '../../contexts/KeycloakContext';
 import { httpGet, httpPost } from '../../api';
@@ -91,6 +92,7 @@ export default function ({ selectedSensorInfo, onClose, onSubmit, onSuccess }: I
                                 <Grid item xs={12} mt={-2}>
                                     <Form
                                         schema={sensorConfig.schema}
+                                        validator={validator}
                                         formData={sensorConfig.values}
                                         onChange={(form) => onSensorConfigFormChange(form)}
                                         onSubmit={(form) => onSensorConfigFormSubmit(form)}

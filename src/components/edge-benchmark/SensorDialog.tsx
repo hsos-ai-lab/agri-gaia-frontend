@@ -17,7 +17,8 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import LoadingButton from '@mui/lab/LoadingButton';
 import CircularProgress from '@mui/material/CircularProgress';
-import Form from '@rjsf/material-ui/v5';
+import Form from '@rjsf/mui';
+import validator from '@rjsf/validator-ajv8';
 import { isValidHostname, isValidIPv4 } from '../../util';
 import useKeycloak from '../../contexts/KeycloakContext';
 import ISensorInfo from '../../types/edge-benchmark/ISensorInfo';
@@ -126,6 +127,7 @@ export default function ({
                         <Grid item xs={12} mt={-2}>
                             <Form
                                 schema={sensorInfo.schema}
+                                validator={validator}
                                 formData={sensorInfo.values}
                                 onChange={(form) => onAddSensorFormChange(form)}
                                 onSubmit={(form) => onAddSensorFormSubmit(form)}

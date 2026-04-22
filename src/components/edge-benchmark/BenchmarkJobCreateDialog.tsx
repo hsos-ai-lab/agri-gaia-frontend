@@ -22,7 +22,8 @@ import FormHelperText from '@mui/material/FormHelperText';
 import CircularProgress from '@mui/material/CircularProgress';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import { TextField, Typography } from '@mui/material';
-import Form from '@rjsf/material-ui/v5';
+import Form from '@rjsf/mui';
+import validator from '@rjsf/validator-ajv8';
 import IDataset from '../../types/IDataset';
 import IModel from '../../types/IModel';
 import useKeycloak from '../../contexts/KeycloakContext';
@@ -348,6 +349,7 @@ export default function ({ selectedDeviceHeaders, onClose, onSuccess }: IBenchma
                         <Grid item xs={12} mt={-2}>
                             <Form
                                 schema={benchmarkConfig.schema}
+                                validator={validator}
                                 onChange={(form) => onCreateJobFormChange(form)}
                                 onSubmit={(form) => onCreateJobFormSubmit(form)}
                                 formData={benchmarkConfig.values}
