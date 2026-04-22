@@ -63,7 +63,7 @@ export const getEdgeInstallCommand = (edgeKey: string, portainerVersion?: string
     -e EDGE_INSECURE_POLL=1 \\
     -e EDGE_INACTIVITY_TIMEOUT=30m \\
     --name portainer_edge_agent \\
-    portainer/agent:${portainerVersion ? portainerVersion : process.env.REACT_APP_PORTAINER_VERSION}`;
+    portainer/agent:${portainerVersion ? portainerVersion : import.meta.env.VITE_PORTAINER_VERSION}`;
 };
 
 export const getLocalDateTime = (date: string) => {

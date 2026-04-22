@@ -9,27 +9,27 @@
 #
 # SPDX-License-Identifier: MIT
 
-FROM node:22-alpine
+FROM node:20-alpine
 
-ARG PROJECT_BASE_URL="agri-gaia.localhost"
-ARG KEYCLOAK_REALM_NAME="default"
-ARG REACT_APP_PORTAINER_VERSION
+ARG PROJECT_BASE_URL
+ARG KEYCLOAK_REALM_NAME
+ARG VITE_PORTAINER_VERSION
 
-RUN test -n "${REACT_APP_PORTAINER_VERSION}"
+RUN test -n "$VITE_PORTAINER_VERSION"
 
 WORKDIR /usr/src/app
 
 COPY package*.json .
-RUN npm install -g serve
-RUN npm install
+RUN npm install -g serve && npm install
 
 COPY . ./
 RUN npm run build
 
-RUN sed -i "s/agri-gaia.localhost/${PROJECT_BASE_URL}/g" build/static/js/main.*.js
-
-RUN sed -i "s/agri-gaia.localhost/${PROJECT_BASE_URL}/g; \
-    s/default-realm/${KEYCLOAK_REALM_NAME}/g \
+# replace all occurrences of the default hostname with the .env value
+# inside the app's JavaScript and configure the keycloak.json
+RUN sed -i "s/agri-gaia.localhost/${PROJECT_BASE_URL}/g" build/static/js/main.*.js && \
+    sed -i "s/agri-gaia.localhost/${PROJECT_BASE_URL}/g; \
+    s/test-realm/${KEYCLOAK_REALM_NAME}/g \
     " build/keycloak.json
 
 EXPOSE 80

@@ -10,7 +10,8 @@
 // SPDX-License-Identifier: MIT
 
 import Grid from '@mui/material/Grid';
-import Form from '@rjsf/material-ui/v5';
+import Form from '@rjsf/mui';
+import validator from '@rjsf/validator-ajv8';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import Box from '@mui/material/Box';
@@ -40,11 +41,12 @@ export default function ({
                 <>
                     <Form
                         schema={datasetMetadataSchema}
+                        validator={validator}
                         onChange={(form) => {
                             setDatasetMetadata(form.formData);
                         }}
                         onError={(error) => {
-                            setErrorMsg(error);
+                            setErrorMsg(error[0].message);
                         }}
                         formData={datasetMetadata}
                         liveValidate={true}

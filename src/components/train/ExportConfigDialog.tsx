@@ -19,7 +19,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Typography from '@mui/material/Typography';
 import IAlertMessage from '../../types/IAlertMessage';
 import Link from '@mui/material/Link';
-import Form from '@rjsf/material-ui/v5';
+import Form from '@rjsf/mui';
+import validator from '@rjsf/validator-ajv8';
 import Alert from '@mui/material/Alert';
 import CodeEditor from '@uiw/react-textarea-code-editor';
 import Button from '@mui/material/Button';
@@ -88,6 +89,7 @@ export default function ({
                                 <Form
                                     disabled={!exportEnabled}
                                     schema={exportConfig.schema}
+                                    validator={validator}
                                     fields={{ DescriptionField: CustomDescription }}
                                     onChange={(form) => {
                                         setExportConfig({ ...exportConfig, values: form.formData });
