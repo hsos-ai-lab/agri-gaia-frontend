@@ -7,7 +7,7 @@ export default defineConfig({
     server: {
         port: 80,
         host: true,
-        allowedHosts: ['.external-public.agri-gaia.edvsz.hs-osnabrueck.de'],
+        allowedHosts: ['.agri-gaia.localhost'],
     },
     // Guard against the dev-server optimizeDeps regression (seen on vite 8.0.14)
     // that splits the Emotion/MUI graph across chunks and throws
