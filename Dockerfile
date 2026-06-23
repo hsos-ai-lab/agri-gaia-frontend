@@ -20,7 +20,7 @@ RUN test -n "$VITE_PORTAINER_VERSION"
 WORKDIR /usr/src/app
 
 COPY package*.json .
-RUN npm install -g serve && npm install
+RUN npm install -g serve && npm ci
 
 COPY . ./
 RUN npm run build
