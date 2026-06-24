@@ -91,7 +91,7 @@ export default function ({ handleClose, onUpload }: ITrainContainerTemplateUploa
                     <Typography>
                         Please select a ZIP archive generated with the Agri-Gaia Train Container Template's{' '}
                         <Link
-                            href="https://github.com/agri-gaia/train-container-template/blob/master/package.sh"
+                            href="https://github.com/hsos-ai-lab/agri-gaia-train-container-template/blob/main/package.sh"
                             target="_blank"
                             rel="noreferrer"
                         >

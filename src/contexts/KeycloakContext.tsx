@@ -9,13 +9,14 @@
 //
 // SPDX-License-Identifier: MIT
 
-import React, { useState, createContext, useContext, useEffect, ReactNode } from 'react';
+import React, { useState, useRef, createContext, useContext, useEffect, ReactNode } from 'react';
 import Keycloak from 'keycloak-js';
 
 const KeycloakContext = createContext<Keycloak.KeycloakInstance | undefined>(undefined);
 
 export const KeycloakProvider = function ({ children }: { children: ReactNode }) {
     const [keycloak, setKeycloak] = useState<Keycloak.KeycloakInstance | undefined>(undefined);
+    const didInit = useRef(false);
 
     function storeTokens(kc: Keycloak.KeycloakInstance) {
         if (kc?.token) {
@@ -56,6 +57,11 @@ export const KeycloakProvider = function ({ children }: { children: ReactNode })
     }
 
     useEffect(() => {
+        // Guard against React 18 StrictMode double-invoking effects in dev,
+        // which would call kc.init() twice and break the OIDC code/state
+        // exchange, causing a Keycloak <-> app redirect loop.
+        if (didInit.current) return;
+        didInit.current = true;
         initKeycloak().catch(() => {
             return;
         });

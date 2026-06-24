@@ -27,10 +27,9 @@ RUN npm run build
 
 # replace all occurrences of the default hostname with the .env value
 # inside the app's JavaScript and configure the keycloak.json
-RUN sed -i "s/agri-gaia.localhost/${PROJECT_BASE_URL}/g" build/static/js/main.*.js && \
+RUN find dist/assets -name "*.js" -exec sed -i "s/agri-gaia.localhost/${PROJECT_BASE_URL}/g" {} + && \
     sed -i "s/agri-gaia.localhost/${PROJECT_BASE_URL}/g; \
     s/test-realm/${KEYCLOAK_REALM_NAME}/g \
-    " build/keycloak.json
-
+    " dist/keycloak.json
 EXPOSE 80
-ENTRYPOINT ["serve", "-s", "build", "-l", "80"]
+ENTRYPOINT ["serve", "-s", "dist", "-l", "80"]

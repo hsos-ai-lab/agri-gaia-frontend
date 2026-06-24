@@ -20,10 +20,14 @@ ENV VITE_PORTAINER_VERSION=${VITE_PORTAINER_VERSION}
 # enter working directory
 WORKDIR /code
 
-COPY package.json .
+# Copy the lockfile too so the dev server installs the exact, tested
+# versions (e.g. vite 8.0.9) instead of drifting to newer patches that
+# break the dev optimizeDeps pre-bundling (emotion/MUI "init_..._esm
+# is not defined"). Requires package-lock.json to be out of .dockerignore.
+COPY package.json package-lock.json ./
 
-# install all dependencies
-RUN npm install
+# install the locked dependency versions
+RUN npm ci
 
 # copy everything
 COPY . .

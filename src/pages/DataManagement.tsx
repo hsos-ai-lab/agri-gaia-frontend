@@ -62,7 +62,6 @@ export default function DataManagement() {
     const fetchConnectorInformation = () => {
         httpGet(keycloak, NETWORK_PATH + '/info')
             .then((result) => {
-                console.log(result);
                 setConnectorAvailable(result['available']);
             })
             .catch((error) => {

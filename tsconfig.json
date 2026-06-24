@@ -1,8 +1,14 @@
 {
     "compilerOptions": {
         "target": "ESNext",
-        "lib": ["DOM", "DOM.Iterable", "ESNext"],
-        "types": ["vite/client"],
+        "lib": [
+            "DOM",
+            "DOM.Iterable",
+            "ESNext"
+        ],
+        "types": [
+            "vite/client"
+        ],
         "allowJs": true,
         "skipLibCheck": true,
         "esModuleInterop": true,
@@ -16,9 +22,14 @@
         "isolatedModules": true,
         "noEmit": true,
         "jsx": "react-jsx",
+        "baseUrl": ".",
         "paths": {
-            "@rjsf/material-ui/*": ["node_modules/@rjsf/material-ui/dist/*"]
+            "@rjsf/material-ui/*": [
+                "node_modules/@rjsf/material-ui/dist/*"
+            ]
         }
     },
-    "include": ["src"]
+    "include": [
+        "src"
+    ]
 }

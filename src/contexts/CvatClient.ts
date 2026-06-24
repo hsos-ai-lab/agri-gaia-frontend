@@ -24,22 +24,18 @@ class CvatClient {
     }
 
     setAuthCookie(name: string, value: string): void {
-        console.log(`Writing CVAT Auth Cookie ${name}=${value}`);
         document.cookie = `${name}=${value}; domain=.${PROJECT_BASE_URL}; path=/; secure; samesite=lax;`;
     }
 
     deleteAuthCookie(name: string): void {
-        console.log(`Deleting CVAT Auth Cookie '${name}'.`);
         document.cookie = `${name}=; path=/; secure; expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
     }
 
     setLocalStorageItem(key: string, value: string): void {
-        console.log(`Setting CVAT Local Storage '${key}': ${value}`);
         localStorage.setItem(key, value);
     }
 
     deleteLocalStorageItem(key: string): void {
-        console.log(`Deleting CVAT Local Storage '${key}'.`);
         localStorage.removeItem(key);
     }
 
@@ -47,7 +43,6 @@ class CvatClient {
         return new Promise((resolve) => {
             httpGet(this.keycloak, CVAT_USER_EXISTS_PATH)
                 .then((user) => {
-                    console.log(`Existence of CVAT REST user "${user.username}":`, user.exists);
                     resolve(user.exists);
                 })
                 .catch((error) => {
@@ -60,7 +55,6 @@ class CvatClient {
         return new Promise((resolve) => {
             httpPost(this.keycloak, CVAT_USER_CREATE_PATH)
                 .then((user) => {
-                    console.log(`Created CVAT REST User "${user.username}" from JWT.`);
                     resolve(user);
                 })
                 .catch((error) => {
@@ -73,7 +67,6 @@ class CvatClient {
         return new Promise((resolve, reject) => {
             httpPost(this.keycloak, CVAT_LOGIN_PATH)
                 .then((auth: ICvatAuth) => {
-                    console.log(`Obtained CVAT REST token for current user:`, auth.key);
                     resolve(auth);
                 })
                 .catch((error) => {
@@ -87,7 +80,6 @@ class CvatClient {
         return new Promise((resolve) => {
             httpPost(this.keycloak, CVAT_LOGOUT_PATH, auth)
                 .then((auth) => {
-                    console.log('CVAT logout successful.');
                     resolve(auth);
                 })
                 .catch((error) => {
