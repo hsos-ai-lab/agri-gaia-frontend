@@ -56,6 +56,10 @@ export default function ({
         return (Math.round(num * factor) / factor).toFixed(prec);
     };
 
+    const humanizeMetricName = (name: string): string => {
+        return name.replace(/[_-]+/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+    };
+
     const onJobResultsPreviewClick = (job: IBenchmarkJob, results: Record<string, any>) => {
         delete results.benchmark_job.inference_results.results;
         setSelectedBenchmarkJob(job);
@@ -223,6 +227,29 @@ export default function ({
             },
         };
 
+        // Quality metrics (accuracy, AUC, F1, ...) are an open-ended map that may
+        // differ per job (or be absent when the dataset had no ground truth). Add
+        // one comparison row per metric key seen across the compared jobs.
+        const metricKeys = Array.from(
+            new Set(
+                benchmarkJobResults.flatMap((result) =>
+                    Object.keys(result.benchmark_job.inference_results.metrics ?? {}),
+                ),
+            ),
+        );
+
+        metricKeys.forEach((metricKey) => {
+            rows[humanizeMetricName(metricKey)] = {
+                vals: [],
+                // Higher is better for the typical quality metrics.
+                compare: (val: number | null, basis: number | null): number => {
+                    if (val == null || basis == null) return 0;
+                    return val > basis ? 1 : val < basis ? -1 : 0;
+                },
+                render: (val: any) => (typeof val === 'number' ? round(val, 4) : val == null ? 'N/A' : String(val)),
+            };
+        });
+
         benchmarkJobs.forEach((job, index) => {
             const benchmarkJobResult = benchmarkJobResults[index];
             const performance = benchmarkJobResult.benchmark_job.inference_results.performance;
@@ -272,6 +299,11 @@ export default function ({
                 'Avg. postprocess latency': performance.postprocess.latency.average,
             }))
                 rows[name].vals.push(value);
+
+            const metrics = benchmarkJobResult.benchmark_job.inference_results.metrics ?? {};
+            metricKeys.forEach((metricKey) => {
+                rows[humanizeMetricName(metricKey)].vals.push(metricKey in metrics ? metrics[metricKey] : null);
+            });
         });
 
         setComparisonRows(rows);

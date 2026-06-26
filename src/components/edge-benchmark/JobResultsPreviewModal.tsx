@@ -83,6 +83,23 @@ export default function ({
     const benchmark_performance = benchmarkJobResult.benchmark_job.inference_results.performance;
     const floating_precision = 4;
 
+    // Quality metrics (e.g. accuracy, AUC, F1, ...) are an open-ended map the
+    // Edge Farm API may or may not populate, depending on whether the dataset
+    // carried ground-truth annotations. Render whatever keys are present.
+    const benchmark_metrics: Record<string, any> =
+        benchmarkJobResult.benchmark_job.inference_results.metrics ?? {};
+    const benchmark_metric_entries = Object.entries(benchmark_metrics);
+
+    const humanizeMetricName = (name: string): string => {
+        return name
+            .replace(/[_-]+/g, ' ')
+            .replace(/\b\w/g, (char) => char.toUpperCase());
+    };
+
+    const formatMetricValue = (value: any): string => {
+        return isNumber(value) ? value.toFixed(floating_precision) : String(value);
+    };
+
     const getByPath = (obj: any, path: string): number => {
         return path.split('.').reduce((acc, key) => acc?.[key], obj);
     };
@@ -147,6 +164,38 @@ export default function ({
                                     </TableBody>
                                 </Table>
                             </TableContainer>
+                            {benchmark_metric_entries.length > 0 ? (
+                                <>
+                                    <Typography sx={{ mt: 3, mb: 2 }} gutterBottom>
+                                        Quality Metrics
+                                    </Typography>
+                                    <TableContainer component={Paper}>
+                                        <Table aria-label="quality metrics overview">
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>Metric</TableCell>
+                                                    <TableCell align="right">Value</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {benchmark_metric_entries.map(([name, value]) => (
+                                                    <TableRow
+                                                        key={name}
+                                                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                                    >
+                                                        <TableCell component="th" scope="row">
+                                                            {humanizeMetricName(name)}
+                                                        </TableCell>
+                                                        <TableCell align="right">
+                                                            {formatMetricValue(value)}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </>
+                            ) : null}
                             <Line
                                 data={{
                                     labels: getSeries('time').map((datetime: string) => {
