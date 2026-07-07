@@ -125,6 +125,7 @@ const DeviceList = ({
     return (
         <>
             <DataGrid
+                autoHeight
                 rows={deviceHeaders}
                 columns={columns}
                 getRowId={(deviceHeader: IDeviceHeader) => deviceHeader.ip}

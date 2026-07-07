@@ -29,6 +29,7 @@ import ContainerImageManagement from './pages/ContainerImageManagement';
 import EdgeBenchmark from './pages/EdgeBenchmark';
 import EdgeBenchmarkSensors from './pages/EdgeBenchmarkSensors';
 import EdgeBenchmarkJobs from './pages/EdgeBenchmarkJobs';
+import EdgeBenchmarkAutoSearch from './pages/EdgeBenchmarkAutoSearch';
 import InferenceContainerTemplateManagement from './pages/InferenceContainerTemplateManagement';
 
 import './style/App.css';
@@ -66,6 +67,7 @@ const AppRoutes = () => (
         <Route path="/edge-benchmark" element={<EdgeBenchmark />} />
         <Route path="/edge-benchmark-sensors" element={<EdgeBenchmarkSensors />} />
         <Route path="/edge-benchmark-jobs" element={<EdgeBenchmarkJobs />} />
+        <Route path="/edge-benchmark-auto-search" element={<EdgeBenchmarkAutoSearch />} />
     </Routes>
 );
 

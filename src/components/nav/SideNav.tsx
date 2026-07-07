@@ -44,6 +44,7 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import CreateIcon from '@mui/icons-material/Create';
 import ListIcon from '@mui/icons-material/List';
 import CameraIcon from '@mui/icons-material/Camera';
+import SearchIcon from '@mui/icons-material/Search';
 
 import { useNavigate } from 'react-router-dom';
 import { createSubdomainUrl, openInNewTab } from '../../util';
@@ -153,6 +154,11 @@ const internalLinks: Array<IListItem> = [
                 text: 'Benchmarks',
                 link: '/edge-benchmark',
                 icon: <CreateIcon />,
+            },
+            {
+                text: 'Auto Search',
+                link: '/edge-benchmark-auto-search',
+                icon: <SearchIcon />,
             },
             {
                 text: 'Jobs',
