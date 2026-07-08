@@ -21,6 +21,14 @@ export interface IInferPerformance {
     inference: IPerformanceResult;
     postprocess: IPerformanceResult;
     warmup?: number | null;
+    // ISO-8601 wall-clock boundaries (manager clock). Optional: absent/null on
+    // results produced before this field set was added.
+    run_started_at?: string | null;
+    run_finished_at?: string | null;
+    first_inference_started_at?: string | null;
+    first_inference_finished_at?: string | null;
+    warmup_started_at?: string | null;
+    warmup_finished_at?: string | null;
 }
 
 export default interface IBenchmarkInferResult {

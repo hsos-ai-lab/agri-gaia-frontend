@@ -22,7 +22,32 @@ import TableBody from '@mui/material/TableBody';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
+import Tooltip from '@mui/material/Tooltip';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { capitalizeFirstChar } from '../../util';
+
+// Small circled-i hover hint. Tooltip content uses `\n` for paragraph breaks
+// (whiteSpace: pre-line). InfoOutlined forwards its ref, so Tooltip wraps it directly.
+function InfoHint({ title }: { title: string }) {
+    return (
+        <Tooltip
+            title={title}
+            arrow
+            enterTouchDelay={0}
+            slotProps={{ tooltip: { sx: { maxWidth: 360, whiteSpace: 'pre-line' } } }}
+        >
+            <InfoOutlinedIcon
+                sx={{
+                    ml: 0.5,
+                    fontSize: '1rem',
+                    color: 'text.secondary',
+                    verticalAlign: 'middle',
+                    cursor: 'help',
+                }}
+            />
+        </Tooltip>
+    );
+}
 
 export default function ({
     benchmarkJob,
@@ -123,6 +148,107 @@ export default function ({
         createRowWithNameAndValues('Samples Per Second', '.samples_per_second'),
         createRowWithNameAndValues('Average Latency', '.latency.average'),
     ];
+
+    // Wall-clock event boundaries (manager clock — see IInferPerformance).
+    const formatTimestamp = (value?: string | null): string => {
+        if (!value) return 'N/A';
+        return new Date(value).toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            fractionalSecondDigits: 3,
+        } as Intl.DateTimeFormatOptions);
+    };
+
+    const durationSeconds = (start?: string | null, end?: string | null): string => {
+        if (!start || !end) return 'N/A';
+        const seconds = (new Date(end).getTime() - new Date(start).getTime()) / 1000;
+        return `${seconds.toFixed(3)} s`;
+    };
+
+    const hasTimingData = benchmark_performance.run_started_at != null;
+    const warmupUsed =
+        benchmark_performance.warmup !== null && benchmark_performance.warmup !== undefined;
+
+    const WARMUP_HINT =
+        'Warm-up runs one extra inference before measuring and discards its result, so the one-time GPU cold ' +
+        'start (CUDA context init + cuDNN convolution-algorithm autotuning) is absorbed up front.\n\n' +
+        'With warm-up OFF, that cold start is counted inside the first measured inference and inflates the ' +
+        'Inference column above.\n\nWith warm-up ON, every measured inference is warm — these numbers reflect ' +
+        'steady-state performance — and the cold-start time is shown separately in the Warm-Up row below.';
+
+    const inflationHint = warmupUsed
+        ? 'Warm-up absorbed the GPU cold start (see the Warm-Up row), so this average reflects the ' +
+          'steady-state per-image latency.'
+        : 'On the first request, ONNX Runtime benchmarks every cuDNN convolution algorithm (EXHAUSTIVE ' +
+          'autotuning) — a one-time cost of tens of seconds. With warm-up OFF it is billed to the first ' +
+          'inference, so this average is dragged far above the typical per-image latency (mean ≫ median) and ' +
+          'Samples/second is understated.\n\nEnable warm-up to exclude it; these numbers would then reflect ' +
+          'the steady-state per-image latency.';
+
+    const firstInferenceHint = warmupUsed
+        ? 'The cold start was absorbed by warm-up (see the Warm-Up row), so this first measured inference is ' +
+          'already warm and runs at steady-state speed.'
+        : 'This first inference includes the GPU cold start: on the very first request ONNX Runtime’s CUDA ' +
+          'backend runs EXHAUSTIVE cuDNN autotuning (benchmarking every convolution algorithm per layer) plus ' +
+          'CUDA context init and driver JIT — so this single call takes tens of seconds while later ' +
+          'inferences run in milliseconds.\n\nBecause warm-up is off, this cost is included in the Inference ' +
+          'total above. Enable warm-up to move it into a separate Warm-Up row.';
+
+    const WARMUP_ROW_HINT =
+        'The warm-up pass: one extra inference, run before measurement and discarded. Its purpose is to ' +
+        'trigger the GPU cold start here (CUDA context init + cuDNN EXHAUSTIVE autotuning) so the measured ' +
+        'inferences that follow are warm. This duration is reported separately and is NOT part of the ' +
+        'Inference total above.';
+
+    const timingRows: {
+        label: string;
+        started?: string | null;
+        finished?: string | null;
+        duration: string;
+        hint?: string;
+    }[] = [
+        {
+            label: 'Run (loop)',
+            started: benchmark_performance.run_started_at,
+            finished: benchmark_performance.run_finished_at,
+            duration: durationSeconds(benchmark_performance.run_started_at, benchmark_performance.run_finished_at),
+        },
+        {
+            label: 'Startup gap (Triton-ready → first inference)',
+            started: benchmark_performance.run_started_at,
+            finished: benchmark_performance.first_inference_started_at,
+            duration: durationSeconds(
+                benchmark_performance.run_started_at,
+                benchmark_performance.first_inference_started_at,
+            ),
+        },
+        ...(benchmark_performance.warmup !== null && benchmark_performance.warmup !== undefined
+            ? [
+                  {
+                      label: 'Warm-Up',
+                      started: benchmark_performance.warmup_started_at,
+                      finished: benchmark_performance.warmup_finished_at,
+                      duration: durationSeconds(
+                          benchmark_performance.warmup_started_at,
+                          benchmark_performance.warmup_finished_at,
+                      ),
+                      hint: WARMUP_ROW_HINT,
+                  },
+              ]
+            : []),
+        {
+            label: 'First Inference',
+            started: benchmark_performance.first_inference_started_at,
+            finished: benchmark_performance.first_inference_finished_at,
+            duration: durationSeconds(
+                benchmark_performance.first_inference_started_at,
+                benchmark_performance.first_inference_finished_at,
+            ),
+            hint: firstInferenceHint,
+        },
+    ];
     return (
         <>
             <Dialog open onClose={onClose} fullWidth maxWidth="xl">
@@ -136,6 +262,7 @@ export default function ({
                             <Typography sx={{ mb: 2 }} gutterBottom>
                                 Key Performance Indicators on {benchmark_performance.preprocess.sample_count.toFixed(0)}{' '}
                                 Samples {benchmark_performance.warmup === null ? 'without Warmup' : 'with Warmup'}
+                                <InfoHint title={WARMUP_HINT} />
                             </Typography>
                             <TableContainer component={Paper}>
                                 <Table aria-label="hot overview">
@@ -155,6 +282,9 @@ export default function ({
                                             >
                                                 <TableCell component="th" scope="row">
                                                     {label}
+                                                    {label === 'Average Latency' ? (
+                                                        <InfoHint title={inflationHint} />
+                                                    ) : null}
                                                 </TableCell>
                                                 {rowValues.map((cellValue) => {
                                                     return <TableCell align="right">{cellValue}</TableCell>;
@@ -164,6 +294,45 @@ export default function ({
                                     </TableBody>
                                 </Table>
                             </TableContainer>
+                            {hasTimingData ? (
+                                <>
+                                    <Typography sx={{ mt: 3, mb: 2 }} gutterBottom>
+                                        Timing (manager clock)
+                                    </Typography>
+                                    <TableContainer component={Paper}>
+                                        <Table aria-label="timing overview">
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>Event</TableCell>
+                                                    <TableCell align="right">Started</TableCell>
+                                                    <TableCell align="right">Finished</TableCell>
+                                                    <TableCell align="right">Duration</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {timingRows.map((row) => (
+                                                    <TableRow
+                                                        key={row.label}
+                                                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                                    >
+                                                        <TableCell component="th" scope="row">
+                                                            {row.label}
+                                                            {row.hint ? <InfoHint title={row.hint} /> : null}
+                                                        </TableCell>
+                                                        <TableCell align="right">
+                                                            {formatTimestamp(row.started)}
+                                                        </TableCell>
+                                                        <TableCell align="right">
+                                                            {formatTimestamp(row.finished)}
+                                                        </TableCell>
+                                                        <TableCell align="right">{row.duration}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </>
+                            ) : null}
                             {benchmark_metric_entries.length > 0 ? (
                                 <>
                                     <Typography sx={{ mt: 3, mb: 2 }} gutterBottom>
