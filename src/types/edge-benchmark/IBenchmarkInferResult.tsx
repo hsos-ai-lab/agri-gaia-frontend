@@ -17,6 +17,9 @@ export interface IPerformanceResult {
 }
 
 export interface IInferPerformance {
+    // Image-fetch (data-load) stage. Optional/additive: absent on results
+    // produced before this stage was instrumented.
+    load?: IPerformanceResult;
     preprocess: IPerformanceResult;
     inference: IPerformanceResult;
     postprocess: IPerformanceResult;

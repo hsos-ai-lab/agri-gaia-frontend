@@ -72,6 +72,31 @@ export default function ({
     };
 
     const createComparisonRows = () => {
+        // The "Load" (image-fetch) stage was added to InferPerformance after some
+        // jobs were recorded. Only compare it when every job carries it, so an
+        // older job never renders as NaN in the Load rows.
+        const allHaveLoad = benchmarkJobResults.every(
+            (result) => result.benchmark_job.inference_results.performance.load != null,
+        );
+        // load / preprocess / inference / postprocess share the same compare +
+        // render per metric, so build each row from one factory (called per
+        // stage to get its own fresh `vals` array) instead of repeating the
+        // block. Duration & latency: lower is better; throughput: higher.
+        const durationRow = () => ({
+            vals: [],
+            compare: (val: number, basis: number): number => (val > basis ? -1 : val < basis ? 1 : 0),
+            render: (val: number) => `${round(val, 2)} sec.`,
+        });
+        const throughputRow = () => ({
+            vals: [],
+            compare: (val: number, basis: number): number => (val > basis ? 1 : val < basis ? -1 : 0),
+            render: (val: number) => `${round(val, 2)} samples/sec.`,
+        });
+        const latencyRow = () => ({
+            vals: [],
+            compare: (val: number, basis: number): number => (val > basis ? -1 : val < basis ? 1 : 0),
+            render: (val: number) => `${round(val, 3)} sec.`,
+        });
         const rows: Record<string, any> = {
             'Comparison basis': {
                 vals: [],
@@ -162,69 +187,18 @@ export default function ({
                     return val;
                 },
             },
-            'Preprocess duration': {
-                vals: [],
-                compare: (val: number, basis: number): number => (val > basis ? -1 : val < basis ? 1 : 0),
-                render: (val: number) => {
-                    return `${round(val, 2)} sec.`;
-                },
-            },
-            'Inference duration': {
-                vals: [],
-                compare: (val: number, basis: number): number => (val > basis ? -1 : val < basis ? 1 : 0),
-                render: (val: number) => {
-                    return `${round(val, 2)} sec.`;
-                },
-            },
-            'Postprocess duration': {
-                vals: [],
-                compare: (val: number, basis: number): number => (val > basis ? -1 : val < basis ? 1 : 0),
-                render: (val: number) => {
-                    return `${round(val, 2)} sec.`;
-                },
-            },
-            'Preprocess throughput': {
-                vals: [],
-                compare: (val: number, basis: number): number => (val > basis ? 1 : val < basis ? -1 : 0),
-                render: (val: number) => {
-                    return `${round(val, 2)} samples/sec.`;
-                },
-            },
-            'Inference throughput': {
-                vals: [],
-                compare: (val: number, basis: number): number => (val > basis ? 1 : val < basis ? -1 : 0),
-                render: (val: number) => {
-                    return `${round(val, 2)} samples/sec.`;
-                },
-            },
-            'Postprocess throughput': {
-                vals: [],
-                compare: (val: number, basis: number): number => (val > basis ? 1 : val < basis ? -1 : 0),
-                render: (val: number) => {
-                    return `${round(val, 2)} samples/sec.`;
-                },
-            },
-            'Avg. preprocess latency': {
-                vals: [],
-                compare: (val: number, basis: number): number => (val > basis ? -1 : val < basis ? 1 : 0),
-                render: (val: number) => {
-                    return `${round(val, 3)} sec.`;
-                },
-            },
-            'Avg. inference latency': {
-                vals: [],
-                compare: (val: number, basis: number): number => (val > basis ? -1 : val < basis ? 1 : 0),
-                render: (val: number) => {
-                    return `${round(val, 3)} sec.`;
-                },
-            },
-            'Avg. postprocess latency': {
-                vals: [],
-                compare: (val: number, basis: number): number => (val > basis ? -1 : val < basis ? 1 : 0),
-                render: (val: number) => {
-                    return `${round(val, 3)} sec.`;
-                },
-            },
+            ...(allHaveLoad ? { 'Load duration': durationRow() } : {}),
+            'Preprocess duration': durationRow(),
+            'Inference duration': durationRow(),
+            'Postprocess duration': durationRow(),
+            ...(allHaveLoad ? { 'Load throughput': throughputRow() } : {}),
+            'Preprocess throughput': throughputRow(),
+            'Inference throughput': throughputRow(),
+            'Postprocess throughput': throughputRow(),
+            ...(allHaveLoad ? { 'Avg. load latency': latencyRow() } : {}),
+            'Avg. preprocess latency': latencyRow(),
+            'Avg. inference latency': latencyRow(),
+            'Avg. postprocess latency': latencyRow(),
         };
 
         // Quality metrics (accuracy, AUC, F1, ...) are an open-ended map that may
@@ -288,12 +262,15 @@ export default function ({
                 'Model warmup': performance.warmup,
                 'Inference client': job.inference_client,
                 'Number of samples': performance.inference.sample_count,
+                ...(allHaveLoad ? { 'Load duration': performance.load?.total_time } : {}),
                 'Preprocess duration': performance.preprocess.total_time,
                 'Inference duration': performance.inference.total_time,
                 'Postprocess duration': performance.postprocess.total_time,
+                ...(allHaveLoad ? { 'Load throughput': performance.load?.samples_per_second } : {}),
                 'Preprocess throughput': performance.preprocess.samples_per_second,
                 'Inference throughput': performance.inference.samples_per_second,
                 'Postprocess throughput': performance.postprocess.samples_per_second,
+                ...(allHaveLoad ? { 'Avg. load latency': performance.load?.latency.average } : {}),
                 'Avg. preprocess latency': performance.preprocess.latency.average,
                 'Avg. inference latency': performance.inference.latency.average,
                 'Avg. postprocess latency': performance.postprocess.latency.average,

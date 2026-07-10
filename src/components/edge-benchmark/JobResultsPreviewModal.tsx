@@ -129,7 +129,14 @@ export default function ({
         return path.split('.').reduce((acc, key) => acc?.[key], obj);
     };
 
-    const processingSteps = ['preprocess', 'inference', 'postprocess'];
+    // Show the image-fetch "Load" stage only when present, so results recorded
+    // before it was instrumented don't crash on getByPath(...).toFixed(...).
+    const processingSteps = [
+        ...(benchmark_performance.load != null ? ['load'] : []),
+        'preprocess',
+        'inference',
+        'postprocess',
+    ];
 
     const createRowWithNameAndValues = (name: string, value: string): string[] => {
         const rowValues: string[] = [];
