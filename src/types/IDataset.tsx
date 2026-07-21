@@ -33,4 +33,5 @@ export default interface IDataset {
     total_filesize: number;
     public: boolean;
     dataset_type: DatasetType;
+    has_annotation_file?: boolean;
 }

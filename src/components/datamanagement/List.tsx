@@ -109,6 +109,7 @@ export default function ({
                             <TableCell>Owner</TableCell>
                             <TableCell>Size</TableCell>
                             <TableCell>Modified</TableCell>
+                            <TableCell>Annotations</TableCell>
                             {connectorAvailable ? <TableCell>Public</TableCell> : null}
                             <TableCell align="right">Actions</TableCell>
                         </TableRow>
@@ -137,6 +138,17 @@ export default function ({
                                         {prettyBytes(row.total_filesize)}
                                     </TableCell>
                                     <TableCell>{getLocalDateTime(row.last_modified)}</TableCell>
+                                    <TableCell>
+                                        <Tooltip
+                                            title={
+                                                row.has_annotation_file
+                                                    ? 'Has a CVAT annotation file (annotations.xml) — benchmark accuracy can be computed.'
+                                                    : 'No annotation file — benchmark accuracy will be N/A. Use the annotate button to add one.'
+                                            }
+                                        >
+                                            <span>{row.has_annotation_file ? '✓' : '—'}</span>
+                                        </Tooltip>
+                                    </TableCell>
                                     {connectorAvailable ? (
                                         <TableCell>
                                             <Switch

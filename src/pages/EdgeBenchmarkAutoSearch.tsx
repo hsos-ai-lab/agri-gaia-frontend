@@ -34,6 +34,7 @@ import Form from '@rjsf/mui';
 import validator from '@rjsf/validator-ajv8';
 import useKeycloak from '../contexts/KeycloakContext';
 import useApplicationTasks from '../contexts/TasksContext';
+import useDatasetGroundTruth from '../hooks/useDatasetGroundTruth';
 import DeviceList from '../components/edge-benchmark/DeviceList';
 import AutoSearchResultModal from '../components/edge-benchmark/AutoSearchResultModal';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
@@ -73,6 +74,7 @@ const EdgeBenchmarkAutoSearch = () => {
     const [factor, setFactor] = useState<OptimizationFactor>('cost');
     const [latencyMetric, setLatencyMetric] = useState<LatencyPercentile>('p95');
     const [latencyThresholdMs, setLatencyThresholdMs] = useState<string>('50');
+    const [minAccuracy, setMinAccuracy] = useState<string>('');
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | undefined>(undefined);
@@ -80,6 +82,10 @@ const EdgeBenchmarkAutoSearch = () => {
     const [openRun, setOpenRun] = useState<IAutoSearchRun | undefined>(undefined);
     const [runDeleteStates, setRunDeleteStates] = useState<Record<string, boolean>>({});
     const [runPendingDelete, setRunPendingDelete] = useState<IAutoSearchRun | undefined>(undefined);
+
+    // Warn when the chosen dataset lacks CVAT ground truth: accuracy will be N/A and
+    // a minimum-accuracy floor would then exclude every device.
+    const { hasGroundTruth } = useDatasetGroundTruth(selectedDataset);
 
     // Maps edge-XX hostnames to their Jetson marketing name (IDeviceHeader.name).
     const deviceNameByHostname = useMemo(
@@ -213,6 +219,7 @@ const EdgeBenchmarkAutoSearch = () => {
             factor,
             latency_metric: latencyMetric,
             latency_threshold_ms: Number(latencyThresholdMs),
+            min_accuracy: minAccuracy === '' ? null : Number(minAccuracy),
             benchmark_config: {
                 edge_device: { protocol: 'http', host: placeholderHost, port: 80 },
                 inference_client: buildInferenceClient(placeholderHost),
@@ -281,6 +288,16 @@ const EdgeBenchmarkAutoSearch = () => {
                         </Select>
                     </FormControl>
                 </Grid>
+
+                {selectedDataset && hasGroundTruth === false && (
+                    <Grid item xs={12}>
+                        <Alert severity="warning">
+                            This dataset has no ground-truth annotations (annotations.xml). Accuracy
+                            will be N/A, and a minimum-accuracy floor would exclude every device. Add
+                            annotations in the Datasets tab first.
+                        </Alert>
+                    </Grid>
+                )}
 
                 <Grid item xs={12} md={4}>
                     <FormControl fullWidth>
@@ -356,6 +373,18 @@ const EdgeBenchmarkAutoSearch = () => {
                         value={latencyThresholdMs}
                         onChange={(e) => setLatencyThresholdMs(e.target.value)}
                         inputProps={{ inputMode: 'numeric', min: 1 }}
+                    />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                    <TextField
+                        fullWidth
+                        label="Minimum accuracy (0–1, optional)"
+                        type="number"
+                        value={minAccuracy}
+                        onChange={(e) => setMinAccuracy(e.target.value)}
+                        inputProps={{ inputMode: 'decimal', min: 0, max: 1, step: 0.01 }}
+                        helperText="Excludes devices below this accuracy; needs dataset ground truth."
                     />
                 </Grid>
 

@@ -23,8 +23,10 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import Tooltip from '@mui/material/Tooltip';
+import Alert from '@mui/material/Alert';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { capitalizeFirstChar } from '../../util';
+import useDatasetGroundTruth from '../../hooks/useDatasetGroundTruth';
 
 // Small circled-i hover hint. Tooltip content uses `\n` for paragraph breaks
 // (whiteSpace: pre-line). InfoOutlined forwards its ref, so Tooltip wraps it directly.
@@ -114,6 +116,14 @@ export default function ({
     const benchmark_metrics: Record<string, any> =
         benchmarkJobResult.benchmark_job.inference_results.metrics ?? {};
     const benchmark_metric_entries = Object.entries(benchmark_metrics);
+
+    // When metrics are absent, distinguish "no ground truth attached" (actionable —
+    // add annotations) from "ground truth present but no metric produced" (e.g. a
+    // detection task the Edge Farm API does not score). `undefined` = still unknown.
+    // Only look it up when there is nothing to show (metrics empty).
+    const { hasGroundTruth } = useDatasetGroundTruth(
+        benchmark_metric_entries.length > 0 ? undefined : benchmarkJob?.dataset?.id,
+    );
 
     const humanizeMetricName = (name: string): string => {
         return name
@@ -371,7 +381,26 @@ export default function ({
                                         </Table>
                                     </TableContainer>
                                 </>
-                            ) : null}
+                            ) : (
+                                <>
+                                    <Typography sx={{ mt: 3, mb: 2 }} gutterBottom>
+                                        Quality Metrics
+                                    </Typography>
+                                    {hasGroundTruth === false ? (
+                                        <Alert severity="info">
+                                            Accuracy unavailable — no ground-truth annotations
+                                            (annotations.xml) are attached to this dataset. Add them
+                                            in the Datasets tab and re-run to compute accuracy.
+                                        </Alert>
+                                    ) : (
+                                        <Alert severity="info">
+                                            No accuracy metric was produced for this benchmark.
+                                            Accuracy is currently computed for classification tasks;
+                                            other task types (e.g. object detection) may not report it.
+                                        </Alert>
+                                    )}
+                                </>
+                            )}
                             <Line
                                 data={{
                                     labels: getSeries('time').map((datetime: string) => {

@@ -27,6 +27,7 @@ import validator from '@rjsf/validator-ajv8';
 import IDataset from '../../types/IDataset';
 import IModel from '../../types/IModel';
 import useKeycloak from '../../contexts/KeycloakContext';
+import useDatasetGroundTruth from '../../hooks/useDatasetGroundTruth';
 import IDeviceHeader from '../../types/edge-benchmark/IDeviceHeader';
 import IEdgeDevice from '../../types/edge-benchmark/IEdgeDevice';
 import FileInput from '../common/FileInput';
@@ -60,6 +61,10 @@ export default function ({ selectedDeviceHeaders, onClose, onSuccess }: IBenchma
     const [selectedModel, setSelectedModel] = useState<string>('');
     const [isCreating, setIsCreating] = useState(false);
     const [createErrorMsg, setCreateErrorMsg] = useState<string | undefined>(undefined);
+
+    // Warn (non-blocking) when the chosen dataset has no CVAT ground truth, so the
+    // user knows accuracy will be N/A and can add annotations in the Datasets tab.
+    const { hasGroundTruth } = useDatasetGroundTruth(selectedDataset);
 
     const tritonInferenceClients = ['TritonDenseNetClient', 'TritonYoloClient'];
 
@@ -291,6 +296,13 @@ export default function ({ selectedDeviceHeaders, onClose, onSuccess }: IBenchma
                                 </Select>
                                 <FormHelperText>Use this dataset for model inference.</FormHelperText>
                             </FormControl>
+                            {selectedDataset && hasGroundTruth === false && (
+                                <Alert severity="warning" sx={{ mt: 1 }}>
+                                    This dataset has no ground-truth annotations (annotations.xml), so
+                                    benchmark accuracy will be N/A. Add annotations in the Datasets tab,
+                                    then re-open this dialog.
+                                </Alert>
+                            )}
                         </Grid>
                         <Grid item xs={12}>
                             <FormControl fullWidth>

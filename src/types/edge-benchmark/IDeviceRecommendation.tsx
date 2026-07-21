@@ -14,6 +14,7 @@ export interface IDeviceCandidateResult {
     benchmark_job_id: string | null;
     latency_ms: number | null;
     energy_joules: number | null;
+    accuracy: number | null;
     cost_eur: number | null;
     tier_rank: number | null;
     meets_constraint: boolean;
@@ -24,6 +25,8 @@ export interface IDeviceRecommendation {
     factor: OptimizationFactor;
     latency_metric: LatencyPercentile;
     latency_threshold_ms: number;
+    min_accuracy: number | null;
+    accuracy_metric: string;
     winner_hostname: string | null;
     candidates: IDeviceCandidateResult[];
 }

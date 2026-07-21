@@ -75,6 +75,7 @@ export default function ({ recommendation, deviceNameByHostname, onClose }: IAut
                                 <TableCell align="right">{latency_metric} latency (ms)</TableCell>
                                 <TableCell align="right">Energy (J)</TableCell>
                                 <TableCell align="right">Cost (€)</TableCell>
+                                <TableCell align="right">Accuracy</TableCell>
                                 <TableCell align="center">Meets constraint</TableCell>
                                 <TableCell>Note</TableCell>
                             </TableRow>
@@ -109,6 +110,7 @@ export default function ({ recommendation, deviceNameByHostname, onClose }: IAut
                                         <TableCell align="right">{formatNumber(candidate.latency_ms, 1)}</TableCell>
                                         <TableCell align="right">{formatNumber(candidate.energy_joules, 2)}</TableCell>
                                         <TableCell align="right">{formatNumber(candidate.cost_eur, 0)}</TableCell>
+                                        <TableCell align="right">{formatNumber(candidate.accuracy, 3)}</TableCell>
                                         <TableCell align="center">{candidate.meets_constraint ? '✓' : '✗'}</TableCell>
                                         <TableCell>{candidate.excluded_reason ?? ''}</TableCell>
                                     </TableRow>
