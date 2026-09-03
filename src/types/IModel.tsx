@@ -27,6 +27,7 @@ export default interface IModel {
     output_shape: number[] | undefined;
     output_labels: string[] | undefined;
     public: boolean;
+    dataset_id: number | undefined;
 }
 
 export const TENSOR_DATATYPES = [

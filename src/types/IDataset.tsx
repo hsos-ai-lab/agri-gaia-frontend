@@ -33,4 +33,6 @@ export default interface IDataset {
     total_filesize: number;
     public: boolean;
     dataset_type: DatasetType;
+    gitlab_project_id?: string;
+    gitlab_api_url?: string;
 }

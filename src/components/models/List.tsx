@@ -24,8 +24,10 @@ import { useNavigate } from 'react-router-dom';
 import { getLocalDateTime } from '../../util';
 
 import IModel from '../../types/IModel';
+import IDataset from '../../types/IDataset';
 import ModelDeleteButton from './ModelDeleteButton';
 import ModelDownloadButton from './ModelDownloadButton';
+import ModelPushToGitlabButton from './ModelPushToGitlabButton';
 import prettyBytes from 'pretty-bytes';
 import ModelInferenceButton from './ModelInferenceButton';
 import { Checkbox, Tooltip } from '@mui/material';
@@ -34,6 +36,7 @@ import { LoadingButton } from '@mui/lab';
 
 interface IModelListProps {
     models: IModel[];
+    datasets: IDataset[];
     connectorAvailable: boolean;
     onDelete: () => void;
     onTogglePublic: (model_id: number) => void;
@@ -43,6 +46,7 @@ interface IModelListProps {
 
 export default function ({
     models,
+    datasets,
     connectorAvailable,
     onDelete,
     onTogglePublic,
@@ -120,6 +124,7 @@ export default function ({
                         {models.map((row, index) => {
                             const isItemSelected = isSelected(row.id);
                             const labelId = `enhanced-table-checkbox-${index}`;
+                            const dataset = datasets.find((d) => d.id === row.dataset_id);
                             return (
                                 <TableRow key={`${row.id}`} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                                     <TableCell padding="checkbox">
@@ -172,6 +177,11 @@ export default function ({
                                             <Grid item>
                                                 <ModelDownloadButton modelId={row.id} />
                                             </Grid>
+                                            {dataset?.gitlab_project_id && dataset?.gitlab_api_url ? (
+                                                <Grid item>
+                                                    <ModelPushToGitlabButton modelId={row.id} />
+                                                </Grid>
+                                            ) : null}
                                             <Grid item>
                                                 <ModelDeleteButton
                                                     modelId={row.id}

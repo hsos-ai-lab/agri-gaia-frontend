@@ -22,7 +22,8 @@ import UploadModelDialog from '../components/models/UploadModelDialog';
 import ModelsList from '../components/models/List';
 
 import IModel from '../types/IModel';
-import { MODELS_PATH, NETWORK_PATH } from '../endpoints';
+import IDataset from '../types/IDataset';
+import { DATASETS_PATH, MODELS_PATH, NETWORK_PATH } from '../endpoints';
 import NoDataYet from '../components/common/NoDataYet';
 import AgrovocSearchbar from '../components/common/AgrovocSearchbar';
 import React from 'react';
@@ -35,6 +36,7 @@ export default function ModelManagement() {
     const keycloak = useKeycloak();
 
     const [models, setModels] = useState<Array<IModel>>([]);
+    const [datasets, setDatasets] = useState<Array<IDataset>>([]);
     const [username, setUsername] = useState<string | undefined>(undefined);
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
     const [inferenceDialogOpen, setInferenceDialogOpen] = useState(false);
@@ -47,6 +49,16 @@ export default function ModelManagement() {
                 models.sort((a, b) => a.name.localeCompare(b.name));
                 setModels(models);
                 console.log('Models:', models);
+            })
+            .catch((error) => {
+                console.error(error);
+            });
+    };
+
+    const fetchDatasets = async () => {
+        httpGet(keycloak, DATASETS_PATH)
+            .then((datasets: IDataset[]) => {
+                setDatasets(datasets);
             })
             .catch((error) => {
                 console.error(error);
@@ -66,6 +78,7 @@ export default function ModelManagement() {
     useEffect(() => {
         fetchConnectorInformation;
         fetchModels();
+        fetchDatasets();
         fetchUsername();
     }, [keycloak]);
 
@@ -179,6 +192,7 @@ export default function ModelManagement() {
             <AgrovocSearchbar searchRoute={MODELS_PATH} handleResponse={setModels} resetResult={fetchModels} />
             <ModelsList
                 models={models}
+                datasets={datasets}
                 connectorAvailable={connectorAvailable}
                 onDelete={fetchModels}
                 onTogglePublic={handleTogglePublic}

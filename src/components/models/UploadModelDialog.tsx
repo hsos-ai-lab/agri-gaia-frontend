@@ -9,7 +9,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import LoadingButton from '@mui/lab/LoadingButton';
 import Dialog from '@mui/material/Dialog';
 
@@ -23,7 +23,7 @@ import MenuItem from '@mui/material/MenuItem';
 import InputLabel from '@mui/material/InputLabel';
 import Grid from '@mui/material/Grid';
 import FileInput from '../common/FileInput';
-import { httpUpload } from '../../api';
+import { httpGet, httpUpload } from '../../api';
 import useKeycloak from '../../contexts/KeycloakContext';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -36,7 +36,8 @@ import AgrovocKeywordSelector from '../../components/common/AgrovocKeywordSelect
 import { inferModelFormat } from '../../util';
 
 import { MODEL_FORMATS } from '../../types/IModel';
-import { MODELS_PATH } from '../../endpoints';
+import IDataset from '../../types/IDataset';
+import { DATASETS_PATH, MODELS_PATH } from '../../endpoints';
 
 export default function ({ handleClose }: { handleClose: () => void }) {
     const keycloak = useKeycloak();
@@ -47,6 +48,13 @@ export default function ({ handleClose }: { handleClose: () => void }) {
 
     const [selectedModelFile, setSelectedModelFile] = useState<FileList>();
     const [chosenKeywords, setChosenKeywords] = useState<Array<AgrovocKeyword>>([]);
+
+    const [datasets, setDatasets] = useState<IDataset[]>([]);
+    const [selectedDatasetId, setSelectedDatasetId] = useState<number | ''>('');
+
+    useEffect(() => {
+        httpGet(keycloak, DATASETS_PATH).then((_datasets: IDataset[]) => setDatasets(_datasets));
+    }, []);
 
     const [createInProgress, setCreateInProgresss] = useState(false);
 
@@ -106,6 +114,9 @@ export default function ({ handleClose }: { handleClose: () => void }) {
             formData.append('description', modelDescription);
             formData.append('name', modelName.trim());
             formData.append('format', modelFormat);
+            if (selectedDatasetId !== '') {
+                formData.append('dataset_id', String(selectedDatasetId));
+            }
 
             httpUpload(keycloak, `${MODELS_PATH}`, formData)
                 .then(() => {
@@ -220,6 +231,30 @@ export default function ({ handleClose }: { handleClose: () => void }) {
                                 {MODEL_FORMATS.map((format) => (
                                     <MenuItem key={format.value} value={format.value}>
                                         {format.label}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                </Grid>
+                <Grid container direction="row" mt={2} sx={{ height: '50px' }}>
+                    <Grid item xs={8}>
+                        <FormControl fullWidth variant="standard">
+                            <InputLabel id="model-dataset-select-label">Based on Dataset (optional)</InputLabel>
+                            <Select
+                                labelId="model-dataset-select-label"
+                                id="model-dataset-select"
+                                value={selectedDatasetId}
+                                label="Based on Dataset (optional)"
+                                onChange={(e) => setSelectedDatasetId(e.target.value as number | '')}
+                                disabled={isUploading()}
+                            >
+                                <MenuItem value="">
+                                    <em>None</em>
+                                </MenuItem>
+                                {datasets.map((dataset) => (
+                                    <MenuItem key={dataset.id} value={dataset.id}>
+                                        {dataset.name}
                                     </MenuItem>
                                 ))}
                             </Select>
