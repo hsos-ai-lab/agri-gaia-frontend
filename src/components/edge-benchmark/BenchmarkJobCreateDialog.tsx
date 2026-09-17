@@ -196,6 +196,10 @@ export default function ({ selectedDeviceHeaders, onClose, onSuccess }: IBenchma
             edge_device: edgeDevice,
             inference_client: inferenceClient,
             cpu_only: config.cpu_only,
+            // Defaulted rather than left undefined: the backend treats a missing
+            // value as 'manager', but being explicit keeps this payload readable
+            // next to the stored result's execution_mode.
+            execution_mode: config.execution_mode ?? 'manager',
         };
 
         return {

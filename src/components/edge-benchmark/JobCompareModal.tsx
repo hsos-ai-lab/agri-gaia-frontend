@@ -21,6 +21,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import JobResultsPreviewModal from './JobResultsPreviewModal';
 import Tooltip from '@mui/material/Tooltip';
+import Alert from '@mui/material/Alert';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 
 export default function ({
@@ -180,6 +181,15 @@ export default function ({
                     return val;
                 },
             },
+            // No `compare`: neither mode is "better", they measure different
+            // things. Ranking them would imply the timing rows are comparable
+            // across modes, which is exactly the mistake the banner warns about.
+            'Execution mode': {
+                vals: [],
+                render: (val: string) => {
+                    return val;
+                },
+            },
             'Number of samples': {
                 vals: [],
                 compare: (val: number, basis: number): number => (val > basis ? 1 : val < basis ? -1 : 0),
@@ -261,6 +271,13 @@ export default function ({
                 'Model output data type': job.model.output_datatype,
                 'Model warmup': performance.warmup,
                 'Inference client': job.inference_client,
+                // Null means manager mode -- it was the only mode that existed
+                // when those results were recorded. Shown unconditionally, and
+                // flagged above when the selection mixes modes, because every
+                // timing row below is measured on different hardware depending
+                // on this value.
+                'Execution mode':
+                    (performance.execution_mode ?? 'manager') === 'device' ? 'Edge device' : 'Manager',
                 'Number of samples': performance.inference.sample_count,
                 ...(allHaveLoad ? { 'Load duration': performance.load?.total_time } : {}),
                 'Preprocess duration': performance.preprocess.total_time,
@@ -286,11 +303,32 @@ export default function ({
         setComparisonRows(rows);
     };
 
+    // A selection that mixes execution modes is comparing numbers measured on
+    // different hardware: manager-mode pre/postprocess run on the manager's x86
+    // CPU and its inference figures include a LAN round trip, device-mode ones
+    // are all on the device's ARM CPU with a container-local Triton call. The
+    // table cannot show that, so say it.
+    const executionModes = new Set(
+        benchmarkJobResults.map(
+            (result) => result.benchmark_job.inference_results.performance.execution_mode ?? 'manager',
+        ),
+    );
+    const mixedExecutionModes = executionModes.size > 1;
+
     return (
         <>
             <Dialog open onClose={onClose} fullWidth maxWidth="xl">
                 <DialogTitle>Compare Benchmark Jobs</DialogTitle>
                 <DialogContent>
+                    {mixedExecutionModes && (
+                        <Alert severity="warning" sx={{ mb: 2 }}>
+                            These jobs did not all run in the same execution mode. Manager-mode runs measure
+                            preprocessing and postprocessing on the Edge-Farm manager&apos;s x86 CPU and include a LAN
+                            round trip in every inference figure; device-mode runs measure the whole pipeline on the
+                            device&apos;s ARM CPU with a container-local Triton call. The timing rows below are
+                            therefore not like-for-like — see the &quot;Execution mode&quot; row.
+                        </Alert>
+                    )}
                     <TableContainer>
                         <Table>
                             <TableHead>

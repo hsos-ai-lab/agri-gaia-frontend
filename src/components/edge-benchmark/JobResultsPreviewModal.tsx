@@ -188,6 +188,23 @@ export default function ({
     const warmupUsed =
         benchmark_performance.warmup !== null && benchmark_performance.warmup !== undefined;
 
+    // Results predating the field read back null, and null means manager mode:
+    // it was the only mode that existed.
+    const executionMode = benchmark_performance.execution_mode ?? 'manager';
+    const executionModeLabel =
+        executionMode === 'device' ? 'Run on the Edge Device' : 'Run on the Edge-Farm Manager';
+    const EXECUTION_MODE_HINT =
+        executionMode === 'device'
+            ? 'The whole pipeline ran on the edge device: data load, preprocessing, inference and ' +
+              'postprocessing. Preprocess and Postprocess therefore reflect the device’s ARM CPU, and ' +
+              'Inference is a container-local call to Triton with no network hop.\n\nThis is what a field ' +
+              'deployment actually does, but it is NOT comparable to a manager-mode run — do not read the ' +
+              'two side by side without accounting for the different hardware.'
+            : 'Only the model execution ran on the edge device. The data load, preprocessing and ' +
+              'postprocessing ran on the Edge-Farm manager’s x86 CPU, and every Inference figure ' +
+              'includes a LAN round trip to the device, not just compute.\n\nNo deployable system has this ' +
+              'shape. For numbers that describe the device itself, run the job in device mode.';
+
     const WARMUP_HINT =
         'Warm-up runs one extra inference before measuring and discards its result, so the one-time GPU cold ' +
         'start (CUDA context init + cuDNN convolution-algorithm autotuning) is absorbed up front.\n\n' +
@@ -280,6 +297,9 @@ export default function ({
                                 Key Performance Indicators on {benchmark_performance.preprocess.sample_count.toFixed(0)}{' '}
                                 Samples {benchmark_performance.warmup === null ? 'without Warmup' : 'with Warmup'}
                                 <InfoHint title={WARMUP_HINT} />
+                                {' — '}
+                                {executionModeLabel}
+                                <InfoHint title={EXECUTION_MODE_HINT} />
                             </Typography>
                             <TableContainer component={Paper}>
                                 <Table aria-label="hot overview">
