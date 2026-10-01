@@ -25,6 +25,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
+import Link from '@mui/material/Link';
 import FileInput from '../common/FileInput';
 import AlertSnackbar from '../common/AlertSnackbar';
 
@@ -84,7 +85,15 @@ export default function ({ modelId }: { modelId: number }) {
                     <DialogContentText>
                         Enter a GitLab personal access token (with write_repository and
                         write_package scope) for the source ARC repository. It is used only for
-                        this request and is not stored.
+                        this request and is not stored. Don't have one yet? See GitLab's guide on{' '}
+                        <Link
+                            href="https://docs.gitlab.com/user/profile/personal_access_tokens/"
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            creating a personal access token
+                        </Link>
+                        .
                     </DialogContentText>
                     <TextField
                         autoFocus
