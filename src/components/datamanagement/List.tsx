@@ -185,6 +185,7 @@ export default function ({
                                                 <DatasetDeleteButton
                                                     datasetName={row.name}
                                                     datasetId={row.id}
+                                                    referencingModelNames={row.referencing_model_names ?? []}
                                                     onDelete={onDelete}
                                                 />
                                             </Grid>

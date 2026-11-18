@@ -26,10 +26,12 @@ import { DATASETS_PATH } from '../../endpoints';
 export default function ({
     datasetId,
     datasetName,
+    referencingModelNames,
     onDelete,
 }: {
     datasetId: number;
     datasetName: string;
+    referencingModelNames: string[];
     onDelete: () => void;
 }) {
     const keycloak = useKeycloak();
@@ -37,7 +39,13 @@ export default function ({
 
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
     const [confirmDialogOpen, setConfirmDialogOpen] = useState<boolean>(false);
-    const [deleteDatasetErrorOpen, setDeleteDatasetErrorOpen] = useState<boolean>(false);
+    const [deleteErrorMsg, setDeleteErrorMsg] = useState<string | undefined>(undefined);
+
+    const isReferenced = referencingModelNames.length > 0;
+    const tooltip = isReferenced
+        ? `Cannot delete: this dataset is used by model${referencingModelNames.length > 1 ? 's' : ''} ` +
+          `${referencingModelNames.join(', ')}. Delete ${referencingModelNames.length > 1 ? 'those models' : 'that model'} first.`
+        : 'Delete';
 
     const deleteDataset = async () => {
         setIsDeleting(true);
@@ -47,8 +55,12 @@ export default function ({
                 console.error(error);
                 const errorDetail = error?.body?.detail;
                 switch (error.status) {
+                    case 409:
+                        setDeleteErrorMsg(errorDetail);
+                        break;
                     case 422:
-                        if (errorDetail?.includes('train_containers_dataset_id_fkey')) setDeleteDatasetErrorOpen(true);
+                        if (errorDetail?.includes('train_containers_dataset_id_fkey'))
+                            setDeleteErrorMsg('Cannot delete a Dataset that is used by a Train Container.');
                         break;
                 }
             })
@@ -71,18 +83,23 @@ export default function ({
                     handleResult={handleConfirmationResult}
                 />
             ) : null}
-            <Tooltip title="Delete">
+            <Tooltip title={tooltip}>
                 <span>
-                    <LoadingButton aria-label="delete" loading={isDeleting} onClick={() => setConfirmDialogOpen(true)}>
+                    <LoadingButton
+                        aria-label="delete"
+                        loading={isDeleting}
+                        disabled={isReferenced}
+                        onClick={() => setConfirmDialogOpen(true)}
+                    >
                         <DeleteIcon />
                     </LoadingButton>
                 </span>
             </Tooltip>
             <AlertSnackbar
-                message="Cannot delete a Dataset that is used by a Train Container."
+                message={deleteErrorMsg}
                 severity="error"
-                open={deleteDatasetErrorOpen}
-                onClose={() => setDeleteDatasetErrorOpen(false)}
+                open={!!deleteErrorMsg}
+                onClose={() => setDeleteErrorMsg(undefined)}
             />
         </>
     );

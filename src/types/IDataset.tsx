@@ -35,4 +35,5 @@ export default interface IDataset {
     dataset_type: DatasetType;
     gitlab_project_id?: string;
     gitlab_api_url?: string;
+    referencing_model_names?: string[];
 }
